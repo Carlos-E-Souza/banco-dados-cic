@@ -45,14 +45,6 @@ CREATE TABLE LOCALIDADE (
 
 CREATE TABLE MORADOR (
     cod_morador INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    endereco VARCHAR(200) NOT NULL,
-    cpf VARCHAR(11) NOT NULL,
-    data_nasc DATE NOT NULL
-);
-
-
-CREATE TABLE MORADOR (
-    cod_morador INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     endereco INT NOT NULL,
     cpf VARCHAR(11) NOT NULL,
     data_nasc DATE NOT NULL,
@@ -77,7 +69,7 @@ CREATE TABLE TELEFONE (
     telefone VARCHAR(9) NOT NULL PRIMARY KEY,
     cod_morador INT,
     DDD VARCHAR(2),
-    FOREIGN KEY (cod_morador) REFERENCES Morador(cod_morador)
+    FOREIGN KEY (cod_morador) REFERENCES MORADOR(cod_morador)
         ON DELETE CASCADE ON UPDATE CASCADE
 );
 

@@ -6,7 +6,8 @@ from sqlalchemy import TextClause, create_engine, text
 from sqlalchemy.engine import Engine, Result
 from sqlalchemy.exc import SQLAlchemyError
 
-from interfaces.interfaces import (
+from src.db.driver_patch import *  # noqa: F403,F401
+from src.interfaces.interfaces import (
     CollectorInterface,
     DatabaseInterface,
     FactoryObjectDBInterface,
@@ -65,9 +66,7 @@ class DatabaseManager(DatabaseInterface):
         if script_path is not None:
             return script_path.resolve()
 
-        default_path = (
-            Path(__file__).resolve().parents[2] / 'gerarTabelasPstg.sql'
-        )
+        default_path = Path(__file__).resolve().parents[3] / 'gerarTabelas.sql'
         return default_path
 
     @staticmethod

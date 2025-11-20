@@ -2,7 +2,7 @@ from http import HTTPStatus
 
 from fastapi import APIRouter
 
-from schemas import Message
+from src.schemas import Message
 
 hello_world_router = APIRouter()
 

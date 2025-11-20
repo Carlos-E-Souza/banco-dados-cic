@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from routers.hello_world import hello_world_router
+from src.routers.hello_world import hello_world_router
 
 app = FastAPI()
 
