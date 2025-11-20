@@ -1,8 +1,16 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence, Type
+from dataclasses import dataclass, field
+from typing import (
+    Any,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+)
 
 
+@dataclass
 class DatabaseInterface(ABC):
     @abstractmethod
     def create_schema_from_script(
@@ -19,13 +27,13 @@ class DatabaseInterface(ABC):
 
 class SingletonDBInterface(ABC):
     @abstractmethod
-    def get_instance(self) -> DatabaseInterface:
+    def __new__(cls) -> DatabaseInterface:
         pass
 
 
 class ObjectDBInterface(ABC):
     @abstractmethod
-    def save(self) -> None:
+    def update(self) -> None:
         pass
 
     @abstractmethod
@@ -33,23 +41,38 @@ class ObjectDBInterface(ABC):
         pass
 
 
+class FactoryObjectDBInterface(ABC):
+    @abstractmethod
+    def create_instance(
+        self, type: str, data: Dict[str, Any]
+    ) -> ObjectDBInterface:
+        pass
+
+
+class SpecificFactoryInterface(ABC):
+    @abstractmethod
+    def __new__(cls, data: Dict[str, Any]) -> ObjectDBInterface:
+        pass
+
+
 @dataclass
 class Param(ABC):
     field: str
     value: Any
+    operator_logic: Literal['AND', 'OR']
 
     @abstractmethod
-    def make_sql_condition(self, index: int) -> str:
+    def make_sql_condition(self) -> str:
         pass
 
 
 @dataclass
 class Filter:
-    object_type: Type[ObjectDBInterface]
-    params: List[Param]
+    object_type: str
+    params: List[Param] = field(default_factory=list)
 
 
 class CollectorInterface(ABC):
     @abstractmethod
-    def collect_data(self, filter: Filter) -> Sequence[ObjectDBInterface]:
+    def collect_instances(self, filter: Filter) -> Sequence[ObjectDBInterface]:
         pass
