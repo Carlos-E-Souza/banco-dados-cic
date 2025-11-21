@@ -44,15 +44,11 @@ class ObjectDBInterface(ABC):
 class FactoryObjectDBInterface(ABC):
     @abstractmethod
     def create_instance(
-        self, type: str, data: Dict[str, Any], db: DatabaseInterface
-    ) -> ObjectDBInterface:
-        pass  # pragma: no cover
-
-
-class SpecificFactoryInterface(ABC):
-    @abstractmethod
-    def __new__(
-        cls, db: DatabaseInterface, data: Dict[str, Any]
+        self,
+        type: str,
+        data: Dict[str, Any],
+        db: DatabaseInterface,
+        in_db: bool = False,
     ) -> ObjectDBInterface:
         pass  # pragma: no cover
 

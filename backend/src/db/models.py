@@ -1,10 +1,6 @@
 from typing import Any, ClassVar
 
-from src.interfaces.interfaces import (
-    DatabaseInterface,
-    ObjectDBInterface,
-    SpecificFactoryInterface,
-)
+from src.interfaces.interfaces import DatabaseInterface, ObjectDBInterface
 
 
 class ObjetoDB(ObjectDBInterface):
@@ -79,13 +75,6 @@ class ObjetoDB(ObjectDBInterface):
         return params, conditions
 
 
-class FactoryAvaliacaoDB(SpecificFactoryInterface):
-    def __new__(
-        cls, db: DatabaseInterface, data: dict[str, Any]
-    ) -> 'AvaliacaoDB':
-        return AvaliacaoDB(db, data, True)
-
-
 class AvaliacaoDB(ObjetoDB):
     name: str = 'AVALIACAO'
 
@@ -113,11 +102,6 @@ class AvaliacaoDB(ObjetoDB):
         self.opiniao = data['opiniao']
 
 
-class FactoryCargoDB(SpecificFactoryInterface):
-    def __new__(cls, db: DatabaseInterface, data: dict[str, Any]) -> 'CargoDB':
-        return CargoDB(db, data, True)
-
-
 class CargoDB(ObjetoDB):
     name: str = 'CARGO'
 
@@ -134,11 +118,6 @@ class CargoDB(ObjetoDB):
         self.cod_cargo = data['cod_cargo']
         self.nome = data['nome']
         self.descricao = data['descricao']
-
-
-class FactoryEmailDB(SpecificFactoryInterface):
-    def __new__(cls, db: DatabaseInterface, data: dict[str, Any]) -> 'EmailDB':
-        return EmailDB(db, data, True)
 
 
 class EmailDB(ObjetoDB):
@@ -158,13 +137,6 @@ class EmailDB(ObjetoDB):
         self.cod_func = data['cod_func']
         self.cod_morador = data['cod_morador']
         self.email = data['email']
-
-
-class FactoryFuncionarioDB(SpecificFactoryInterface):
-    def __new__(
-        cls, db: DatabaseInterface, data: dict[str, Any]
-    ) -> 'FuncionarioDB':
-        return FuncionarioDB(db, data, True)
 
 
 class FuncionarioDB(ObjetoDB):
@@ -196,11 +168,6 @@ class FuncionarioDB(ObjetoDB):
         self.fim_contrato = data['fim_contrato']
 
 
-class FactoryLocalDB(SpecificFactoryInterface):
-    def __new__(cls, db: DatabaseInterface, data: dict[str, Any]) -> 'LocalDB':
-        return LocalDB(db, data, True)
-
-
 class LocalDB(ObjetoDB):
     name: str = 'LOCALIDADE'
 
@@ -219,13 +186,6 @@ class LocalDB(ObjetoDB):
         self.municipio = data['municipio']
         self.bairro = data['bairro']
         self.endereco = data['endereco']
-
-
-class FactoryOcorrenciaDB(SpecificFactoryInterface):
-    def __new__(
-        cls, db: DatabaseInterface, data: dict[str, Any]
-    ) -> 'OcorrenciaDB':
-        return OcorrenciaDB(db, data, True)
 
 
 class OcorrenciaDB(ObjetoDB):
@@ -249,13 +209,6 @@ class OcorrenciaDB(ObjetoDB):
         self.status = data['status']
 
 
-class FactoryOrgaoPublicoDB(SpecificFactoryInterface):
-    def __new__(
-        cls, db: DatabaseInterface, data: dict[str, Any]
-    ) -> 'OrgaoPublicoDB':
-        return OrgaoPublicoDB(db, data, True)
-
-
 class OrgaoPublicoDB(ObjetoDB):
     name: str = 'ORGAO_PUBLICO'
 
@@ -277,13 +230,6 @@ class OrgaoPublicoDB(ObjetoDB):
         self.data_fim = data['data_fim']
 
 
-class FactoryMoradorDB(SpecificFactoryInterface):
-    def __new__(
-        cls, db: DatabaseInterface, data: dict[str, Any]
-    ) -> 'MoradorDB':
-        return MoradorDB(db, data, True)
-
-
 class MoradorDB(ObjetoDB):
     name: str = 'MORADOR'
 
@@ -301,13 +247,6 @@ class MoradorDB(ObjetoDB):
         self.endereco = data['endereco']
         self.cpf = data['cpf']
         self.data_nasc = data['data_nasc']
-
-
-class FactoryServicoDB(SpecificFactoryInterface):
-    def __new__(
-        cls, db: DatabaseInterface, data: dict[str, Any]
-    ) -> 'ServicoDB':
-        return ServicoDB(db, data, True)
 
 
 class ServicoDB(ObjetoDB):
@@ -339,13 +278,6 @@ class ServicoDB(ObjetoDB):
         self.fim_servico = data['fim_servico']
 
 
-class FactoryTelefoneDB(SpecificFactoryInterface):
-    def __new__(
-        cls, db: DatabaseInterface, data: dict[str, Any]
-    ) -> 'TelefoneDB':
-        return TelefoneDB(db, data, True)
-
-
 class TelefoneDB(ObjetoDB):
     name: str = 'TELEFONE'
 
@@ -362,13 +294,6 @@ class TelefoneDB(ObjetoDB):
         self.telefone = data['telefone']
         self.cod_morador = data['cod_morador']
         self.DDD = data['DDD']
-
-
-class FactoryTipoOcorrenciaDB(SpecificFactoryInterface):
-    def __new__(
-        cls, db: DatabaseInterface, data: dict[str, Any]
-    ) -> 'TipoOcorrenciaDB':
-        return TipoOcorrenciaDB(db, data, True)
 
 
 class TipoOcorrenciaDB(ObjetoDB):

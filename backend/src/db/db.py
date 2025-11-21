@@ -7,6 +7,19 @@ from sqlalchemy.engine import Engine, Result
 from sqlalchemy.exc import SQLAlchemyError
 
 from src.db.driver_patch import *  # noqa: F403,F401
+from src.db.models import (
+    AvaliacaoDB,
+    CargoDB,
+    EmailDB,
+    FuncionarioDB,
+    LocalDB,
+    MoradorDB,
+    OcorrenciaDB,
+    OrgaoPublicoDB,
+    ServicoDB,
+    TelefoneDB,
+    TipoOcorrenciaDB,
+)
 from src.interfaces.interfaces import (
     CollectorInterface,
     DatabaseInterface,
@@ -14,7 +27,6 @@ from src.interfaces.interfaces import (
     Filter,
     ObjectDBInterface,
     SingletonDBInterface,
-    SpecificFactoryInterface,
 )
 
 logger = logging.getLogger(__name__)
@@ -110,23 +122,39 @@ class SingletonDB(SingletonDBInterface):
         return cls._instance
 
 
-registry: dict[str, type[SpecificFactoryInterface]] = {}
+registry: dict[str, type[ObjectDBInterface]] = {
+    'avaliacao': AvaliacaoDB,
+    'cargo': CargoDB,
+    'email': EmailDB,
+    'funcionario': FuncionarioDB,
+    'localidade': LocalDB,
+    'morador': MoradorDB,
+    'ocorrencia': OcorrenciaDB,
+    'orgao_publico': OrgaoPublicoDB,
+    'servico': ServicoDB,
+    'telefone': TelefoneDB,
+    'tipo_ocorrencia': TipoOcorrenciaDB,
+}
 
 
 class FactoryObjectDB(FactoryObjectDBInterface):
     def __init__(
-        self, registry: dict[str, type[SpecificFactoryInterface]] = registry
+        self, registry: dict[str, type[ObjectDBInterface]] = registry
     ) -> None:
         self.registry = registry
 
     def create_instance(
-        self, type: str, data: dict[str, Any], db: DatabaseInterface
+        self,
+        type: str,
+        data: dict[str, Any],
+        db: DatabaseInterface,
+        in_db: bool = False,
     ) -> ObjectDBInterface:
         if type not in self.registry:
             raise ValueError(f'Unknown object type: {type}')
 
         obj_class = self.registry[type]
-        return obj_class(db, data)
+        return obj_class(db, data, in_db)
 
 
 class CollectorDB(CollectorInterface):
@@ -147,7 +175,7 @@ class CollectorDB(CollectorInterface):
 
         for row in results:
             obj = FactoryObjectDB().create_instance(
-                filter.object_type, row, self.db_manager
+                filter.object_type, row, self.db_manager, True
             )
             objects.append(obj)
 
