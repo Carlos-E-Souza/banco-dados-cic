@@ -120,13 +120,13 @@ class FactoryObjectDB(FactoryObjectDBInterface):
         self.registry = registry
 
     def create_instance(
-        self, type: str, data: dict[str, Any]
+        self, type: str, data: dict[str, Any], db: DatabaseInterface
     ) -> ObjectDBInterface:
         if type not in self.registry:
             raise ValueError(f'Unknown object type: {type}')
 
         obj_class = self.registry[type]
-        return obj_class(data)
+        return obj_class(db, data)
 
 
 class CollectorDB(CollectorInterface):
@@ -146,7 +146,9 @@ class CollectorDB(CollectorInterface):
         objects: List[ObjectDBInterface] = []
 
         for row in results:
-            obj = FactoryObjectDB().create_instance(filter.object_type, row)
+            obj = FactoryObjectDB().create_instance(
+                filter.object_type, row, self.db_manager
+            )
             objects.append(obj)
 
         return objects

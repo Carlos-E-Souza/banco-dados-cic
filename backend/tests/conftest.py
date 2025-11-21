@@ -1,7 +1,10 @@
+from unittest.mock import MagicMock
+
 import pytest
 from testcontainers.mysql import MySqlContainer
 
 from src.db.db import DatabaseManager
+from src.interfaces.interfaces import DatabaseInterface
 
 
 @pytest.fixture(scope='session')
@@ -29,3 +32,8 @@ def db_manager(db_url: str):
     db.execute_raw_query('DROP DATABASE IF EXISTS PROJETO1BD;')
     db.create_schema_from_script()
     return db
+
+
+@pytest.fixture
+def mock_db():
+    return MagicMock(spec=DatabaseInterface)

@@ -1,0 +1,390 @@
+from typing import Any, ClassVar
+
+from src.interfaces.interfaces import (
+    DatabaseInterface,
+    ObjectDBInterface,
+    SpecificFactoryInterface,
+)
+
+
+class ObjetoDB(ObjectDBInterface):
+    name: ClassVar[str] = 'ObjetoDB'
+
+    def __init__(self, db: DatabaseInterface, in_db: bool = False) -> None:
+        self._db = db
+
+        self._in_db = in_db
+
+    @property
+    def table_name(self) -> str:
+        return getattr(self, 'name', self.__class__.__name__)
+
+    def update(self) -> None:
+        if self._in_db:
+            self._update_in_db()
+        else:
+            self._insert_in_db()
+            self._in_db = True
+
+    def _update_in_db(self) -> None:
+        params, conditions = self._get_values()
+
+        sql_update = (
+            f'UPDATE {self.table_name} SET '
+            + ', '.join(f'{k} = ?' for k in params.keys())
+            + ' WHERE '
+            + ' AND '.join(f'{k} = ?' for k in conditions.keys())
+        )
+
+        self._db.execute_raw_query(sql_update, conditions | params)
+
+    def _insert_in_db(self) -> None:
+        params, conditions = self._get_values()
+
+        sql_insert = (
+            f'INSERT INTO {self.table_name} ( '
+            + ', '.join(params.keys())
+            + ' ) VALUES ( '
+            + ', '.join('?' for _ in params)
+            + ' )'
+        )
+
+        self._db.execute_raw_query(sql_insert, params)
+
+    def delete(self) -> None:
+        _, conditions = self._get_values()
+
+        sql_delete = (
+            f'DELETE FROM {self.table_name} '
+            + 'WHERE '
+            + ' AND '.join(f'{k} = ?' for k in conditions.keys())
+        )
+
+        self._db.execute_raw_query(sql_delete, conditions)
+        self._in_db = False
+
+    def _get_values(self) -> tuple[dict[str, Any], dict[str, Any]]:
+        params = {}
+        conditions = {}
+
+        pk_fields = getattr(self, 'PK_FIELDS', [])
+        non_pk_fields = getattr(self, 'NON_PK_FIELDS', [])
+
+        for key in non_pk_fields:
+            params[key] = getattr(self, key)
+
+        for key in pk_fields:
+            conditions[key] = getattr(self, key)
+
+        return params, conditions
+
+
+class FactoryAvaliacaoDB(SpecificFactoryInterface):
+    def __new__(
+        cls, db: DatabaseInterface, data: dict[str, Any]
+    ) -> 'AvaliacaoDB':
+        return AvaliacaoDB(db, data, True)
+
+
+class AvaliacaoDB(ObjetoDB):
+    name: str = 'AVALIACAO'
+
+    PK_FIELDS = ['cod_aval']
+    NON_PK_FIELDS = [
+        'cod_servico',
+        'cod_morador',
+        'nota_serv',
+        'nota_tempo',
+        'opiniao',
+    ]
+
+    def __init__(
+        self,
+        db: DatabaseInterface,
+        data: dict[str, Any],
+        in_db: bool = False,
+    ) -> None:
+        super().__init__(db, in_db)
+        self.cod_aval = data['cod_aval']
+        self.cod_servico = data['cod_servico']
+        self.cod_morador = data['cod_morador']
+        self.nota_serv = data['nota_serv']
+        self.nota_tempo = data['nota_tempo']
+        self.opiniao = data['opiniao']
+
+
+class FactoryCargoDB(SpecificFactoryInterface):
+    def __new__(cls, db: DatabaseInterface, data: dict[str, Any]) -> 'CargoDB':
+        return CargoDB(db, data, True)
+
+
+class CargoDB(ObjetoDB):
+    name: str = 'CARGO'
+
+    PK_FIELDS = ['cod_cargo']
+    NON_PK_FIELDS = ['nome', 'descricao']
+
+    def __init__(
+        self,
+        db: DatabaseInterface,
+        data: dict[str, Any],
+        in_db: bool = False,
+    ) -> None:
+        super().__init__(db, in_db)
+        self.cod_cargo = data['cod_cargo']
+        self.nome = data['nome']
+        self.descricao = data['descricao']
+
+
+class FactoryEmailDB(SpecificFactoryInterface):
+    def __new__(cls, db: DatabaseInterface, data: dict[str, Any]) -> 'EmailDB':
+        return EmailDB(db, data, True)
+
+
+class EmailDB(ObjetoDB):
+    name: str = 'EMAIL'
+
+    PK_FIELDS = ['cod_email']
+    NON_PK_FIELDS = ['cod_func', 'cod_morador', 'email']
+
+    def __init__(
+        self,
+        db: DatabaseInterface,
+        data: dict[str, Any],
+        in_db: bool = False,
+    ) -> None:
+        super().__init__(db, in_db)
+        self.cod_email = data['cod_email']
+        self.cod_func = data['cod_func']
+        self.cod_morador = data['cod_morador']
+        self.email = data['email']
+
+
+class FactoryFuncionarioDB(SpecificFactoryInterface):
+    def __new__(
+        cls, db: DatabaseInterface, data: dict[str, Any]
+    ) -> 'FuncionarioDB':
+        return FuncionarioDB(db, data, True)
+
+
+class FuncionarioDB(ObjetoDB):
+    name: str = 'FUNCIONARIO'
+
+    PK_FIELDS = ['cod_func']
+    NON_PK_FIELDS = [
+        'orgao_pub',
+        'cargo',
+        'cpf',
+        'data_nasc',
+        'inicio_contrato',
+        'fim_contrato',
+    ]
+
+    def __init__(
+        self,
+        db: DatabaseInterface,
+        data: dict[str, Any],
+        in_db: bool = False,
+    ) -> None:
+        super().__init__(db, in_db)
+        self.cod_func = data['cod_func']
+        self.orgao_pub = data['orgao_pub']
+        self.cargo = data['cargo']
+        self.cpf = data['cpf']
+        self.data_nasc = data['data_nasc']
+        self.inicio_contrato = data['inicio_contrato']
+        self.fim_contrato = data['fim_contrato']
+
+
+class FactoryLocalDB(SpecificFactoryInterface):
+    def __new__(cls, db: DatabaseInterface, data: dict[str, Any]) -> 'LocalDB':
+        return LocalDB(db, data, True)
+
+
+class LocalDB(ObjetoDB):
+    name: str = 'LOCALIDADE'
+
+    PK_FIELDS = ['cod_local']
+    NON_PK_FIELDS = ['estado', 'municipio', 'bairro', 'endereco']
+
+    def __init__(
+        self,
+        db: DatabaseInterface,
+        data: dict[str, Any],
+        in_db: bool = False,
+    ) -> None:
+        super().__init__(db, in_db)
+        self.cod_local = data['cod_local']
+        self.estado = data['estado']
+        self.municipio = data['municipio']
+        self.bairro = data['bairro']
+        self.endereco = data['endereco']
+
+
+class FactoryOcorrenciaDB(SpecificFactoryInterface):
+    def __new__(
+        cls, db: DatabaseInterface, data: dict[str, Any]
+    ) -> 'OcorrenciaDB':
+        return OcorrenciaDB(db, data, True)
+
+
+class OcorrenciaDB(ObjetoDB):
+    name: str = 'OCORRENCIA'
+
+    PK_FIELDS = ['cod_oco']
+    NON_PK_FIELDS = ['cod_tipo', 'cod_local', 'cod_morador', 'data', 'status']
+
+    def __init__(
+        self,
+        db: DatabaseInterface,
+        data: dict[str, Any],
+        in_db: bool = False,
+    ) -> None:
+        super().__init__(db, in_db)
+        self.cod_oco = data['cod_oco']
+        self.cod_tipo = data['cod_tipo']
+        self.cod_local = data['cod_local']
+        self.cod_morador = data['cod_morador']
+        self.data = data['data']
+        self.status = data['status']
+
+
+class FactoryOrgaoPublicoDB(SpecificFactoryInterface):
+    def __new__(
+        cls, db: DatabaseInterface, data: dict[str, Any]
+    ) -> 'OrgaoPublicoDB':
+        return OrgaoPublicoDB(db, data, True)
+
+
+class OrgaoPublicoDB(ObjetoDB):
+    name: str = 'ORGAO_PUBLICO'
+
+    PK_FIELDS = ['cod_orgao']
+    NON_PK_FIELDS = ['nome', 'estado', 'descr', 'data_ini', 'data_fim']
+
+    def __init__(
+        self,
+        db: DatabaseInterface,
+        data: dict[str, Any],
+        in_db: bool = False,
+    ) -> None:
+        super().__init__(db, in_db)
+        self.cod_orgao = data['cod_orgao']
+        self.nome = data['nome']
+        self.estado = data['estado']
+        self.descr = data['descr']
+        self.data_ini = data['data_ini']
+        self.data_fim = data['data_fim']
+
+
+class FactoryMoradorDB(SpecificFactoryInterface):
+    def __new__(
+        cls, db: DatabaseInterface, data: dict[str, Any]
+    ) -> 'MoradorDB':
+        return MoradorDB(db, data, True)
+
+
+class MoradorDB(ObjetoDB):
+    name: str = 'MORADOR'
+
+    PK_FIELDS = ['cod_morador']
+    NON_PK_FIELDS = ['endereco', 'cpf', 'data_nasc']
+
+    def __init__(
+        self,
+        db: DatabaseInterface,
+        data: dict[str, Any],
+        in_db: bool = False,
+    ) -> None:
+        super().__init__(db, in_db)
+        self.cod_morador = data['cod_morador']
+        self.endereco = data['endereco']
+        self.cpf = data['cpf']
+        self.data_nasc = data['data_nasc']
+
+
+class FactoryServicoDB(SpecificFactoryInterface):
+    def __new__(
+        cls, db: DatabaseInterface, data: dict[str, Any]
+    ) -> 'ServicoDB':
+        return ServicoDB(db, data, True)
+
+
+class ServicoDB(ObjetoDB):
+    name: str = 'SERVICO'
+
+    PK_FIELDS = ['cod_servico']
+    NON_PK_FIELDS = [
+        'cod_orgao',
+        'cod_local',
+        'nome',
+        'descr',
+        'inicio_servico',
+        'fim_servico',
+    ]
+
+    def __init__(
+        self,
+        db: DatabaseInterface,
+        data: dict[str, Any],
+        in_db: bool = False,
+    ) -> None:
+        super().__init__(db, in_db)
+        self.cod_servico = data['cod_servico']
+        self.cod_orgao = data['cod_orgao']
+        self.cod_local = data['cod_local']
+        self.nome = data['nome']
+        self.descr = data['descr']
+        self.inicio_servico = data['inicio_servico']
+        self.fim_servico = data['fim_servico']
+
+
+class FactoryTelefoneDB(SpecificFactoryInterface):
+    def __new__(
+        cls, db: DatabaseInterface, data: dict[str, Any]
+    ) -> 'TelefoneDB':
+        return TelefoneDB(db, data, True)
+
+
+class TelefoneDB(ObjetoDB):
+    name: str = 'TELEFONE'
+
+    PK_FIELDS = ['telefone']
+    NON_PK_FIELDS = ['cod_morador', 'DDD']
+
+    def __init__(
+        self,
+        db: DatabaseInterface,
+        data: dict[str, Any],
+        in_db: bool = False,
+    ) -> None:
+        super().__init__(db, in_db)
+        self.telefone = data['telefone']
+        self.cod_morador = data['cod_morador']
+        self.DDD = data['DDD']
+
+
+class FactoryTipoOcorrenciaDB(SpecificFactoryInterface):
+    def __new__(
+        cls, db: DatabaseInterface, data: dict[str, Any]
+    ) -> 'TipoOcorrenciaDB':
+        return TipoOcorrenciaDB(db, data, True)
+
+
+class TipoOcorrenciaDB(ObjetoDB):
+    name: str = 'TIPO_OCORRENCIA'
+
+    PK_FIELDS = ['cod_tipo']
+    NON_PK_FIELDS = ['orgao_pub', 'nome', 'descr']
+
+    def __init__(
+        self,
+        db: DatabaseInterface,
+        data: dict[str, Any],
+        in_db: bool = False,
+    ) -> None:
+        super().__init__(db, in_db)
+        self.cod_tipo = data['cod_tipo']
+        self.orgao_pub = data['orgao_pub']
+        self.nome = data['nome']
+        self.descr = data['descr']
