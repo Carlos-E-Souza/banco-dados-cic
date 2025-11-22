@@ -18,7 +18,6 @@ from src.db.models import (
 
 def test_avaliacao_factory_and_model(mock_db):
     data = {
-        'cod_aval': 1,
         'cod_servico': 2,
         'cod_morador': 3,
         'nota_serv': 5,
@@ -30,20 +29,19 @@ def test_avaliacao_factory_and_model(mock_db):
     )
     assert isinstance(obj, AvaliacaoDB)
     assert obj.table_name == 'AVALIACAO'
-    assert obj.cod_aval == 1
+    assert obj.cod_aval is None
     assert obj.nota_serv == data['nota_serv']
 
 
 def test_cargo_factory_and_model(mock_db):
     data = {
-        'cod_cargo': 1,
         'nome': 'Manager',
         'descricao': 'Manages things',
     }
     obj: CargoDB = FactoryObjectDB().create_instance('cargo', data, mock_db)
     assert isinstance(obj, CargoDB)
     assert obj.table_name == 'CARGO'
-    assert obj.cod_cargo == 1
+    assert obj.cod_cargo is None
     assert obj.nome == 'Manager'
 
 
@@ -57,7 +55,7 @@ def test_email_factory_and_model(mock_db):
     obj: EmailDB = FactoryObjectDB().create_instance('email', data, mock_db)
     assert isinstance(obj, EmailDB)
     assert obj.table_name == 'EMAIL'
-    assert obj.cod_email == 1
+    assert obj.cod_email is None
     assert obj.email == 'test@example.com'
 
 
@@ -76,7 +74,7 @@ def test_funcionario_factory_and_model(mock_db):
     )
     assert isinstance(obj, FuncionarioDB)
     assert obj.table_name == 'FUNCIONARIO'
-    assert obj.cod_func == 1
+    assert obj.cod_func is None
     assert obj.cpf == '12345678901'
 
 
@@ -93,7 +91,7 @@ def test_local_factory_and_model(mock_db):
     )
     assert isinstance(obj, LocalDB)
     assert obj.table_name == 'LOCALIDADE'
-    assert obj.cod_local == 1
+    assert obj.cod_local is None
     assert obj.estado == 'DF'
 
 
@@ -111,7 +109,7 @@ def test_ocorrencia_factory_and_model(mock_db):
     )
     assert isinstance(obj, OcorrenciaDB)
     assert obj.table_name == 'OCORRENCIA'
-    assert obj.cod_oco == 1
+    assert obj.cod_oco is None
     assert obj.status == 'OPEN'
 
 
@@ -129,7 +127,7 @@ def test_orgao_publico_factory_and_model(mock_db):
     )
     assert isinstance(obj, OrgaoPublicoDB)
     assert obj.table_name == 'ORGAO_PUBLICO'
-    assert obj.cod_orgao == 1
+    assert obj.cod_orgao is None
     assert obj.nome == 'Orgao 1'
 
 
@@ -145,7 +143,7 @@ def test_morador_factory_and_model(mock_db):
     )
     assert isinstance(obj, MoradorDB)
     assert obj.table_name == 'MORADOR'
-    assert obj.cod_morador == 1
+    assert obj.cod_morador is None
     assert obj.cpf == '00000000000'
 
 
@@ -164,7 +162,7 @@ def test_servico_factory_and_model(mock_db):
     )
     assert isinstance(obj, ServicoDB)
     assert obj.table_name == 'SERVICO'
-    assert obj.cod_servico == 1
+    assert obj.cod_servico is None
     assert obj.nome == 'Servico 1'
 
 
@@ -191,7 +189,7 @@ def test_tipo_ocorrencia_factory_and_model(mock_db):
     )
     assert isinstance(obj, TipoOcorrenciaDB)
     assert obj.table_name == 'TIPO_OCORRENCIA'
-    assert obj.cod_tipo == 1
+    assert obj.cod_tipo is None
     assert obj.nome == 'Tipo 1'
 
 
@@ -203,35 +201,39 @@ def test_objetodb_sql_generation(mock_db):
     assert not obj._in_db
 
     # Test Insert
+    mock_db.connection.execute.return_value.lastrowid = 1
     obj.update()
-    mock_db.execute_raw_query.assert_called()
-    args, _ = mock_db.execute_raw_query.call_args
-    assert 'INSERT INTO CARGO' in args[0]
-    assert 'nome' in args[0]
-    assert 'descricao' in args[0]
-    assert {'nome': 'Manager', 'descricao': 'Manages things'} == args[1]
+    mock_db.connection.execute.assert_called()
+    args, _ = mock_db.connection.execute.call_args
+    args, sttm = str(args[0]), args[1]
+    assert 'INSERT INTO CARGO' in args
+    assert 'nome' in args
+    assert 'descricao' in args
+    assert {'nome': 'Manager', 'descricao': 'Manages things'} == sttm
     assert obj._in_db
 
     # Test Update
     obj.nome = 'Director'
     obj.update()
-    args, _ = mock_db.execute_raw_query.call_args
-    assert 'UPDATE CARGO' in args[0]
-    assert 'nome = ?' in args[0]
-    assert 'descricao = ?' in args[0]
-    assert 'cod_cargo = ?' in args[0]
+    args, _ = mock_db.write_raw_query.call_args
+    args, sttm = str(args[0]), args[1]
+    assert 'UPDATE CARGO' in args
+    assert 'nome = :nome' in args
+    assert 'descricao = :descricao' in args
+    assert 'cod_cargo = :cod_cargo' in args
     assert {
         'nome': 'Director',
         'descricao': 'Manages things',
         'cod_cargo': 1,
-    } == args[1]
+    } == sttm
 
     # Test Delete
     obj.delete()
-    args, _ = mock_db.execute_raw_query.call_args
-    assert 'DELETE FROM CARGO' in args[0]
-    assert 'cod_cargo = ?' in args[0]
-    assert {'cod_cargo': 1} == args[1]
+    args, _ = mock_db.write_raw_query.call_args
+    args, sttm = str(args[0]), args[1]
+    assert 'DELETE FROM CARGO' in args
+    assert 'cod_cargo = :cod_cargo' in args
+    assert {'cod_cargo': 1} == sttm
     assert not obj._in_db
 
 

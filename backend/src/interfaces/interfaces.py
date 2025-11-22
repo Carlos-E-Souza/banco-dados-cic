@@ -19,9 +19,19 @@ class DatabaseInterface(ABC):
         pass  # pragma: no cover
 
     @abstractmethod
-    def execute_raw_query(
+    def commit(self) -> None:
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def read_raw_query(
         self, raw_sql: str, params: Optional[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def write_raw_query(
+        self, raw_sql: str, params: Optional[Dict[str, Any]] = None
+    ) -> None:
         pass  # pragma: no cover
 
 

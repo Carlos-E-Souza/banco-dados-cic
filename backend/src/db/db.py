@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any, Iterable, List, Optional, Sequence
 
 from sqlalchemy import TextClause, create_engine, text
-from sqlalchemy.engine import Engine, Result
+from sqlalchemy.engine import Connection, Engine, Result
 from sqlalchemy.exc import SQLAlchemyError
 
 from src.db.driver_patch import *  # noqa: F403,F401
@@ -38,6 +38,7 @@ class DatabaseManager(DatabaseInterface):
         self.engine: Engine = create_engine(
             database_url, echo=echo, future=True
         )
+        self.connection: Connection = self.engine.connect()
 
     def create_schema_from_script(
         self, script_path: Optional[Path] = None
@@ -49,16 +50,14 @@ class DatabaseManager(DatabaseInterface):
             logger.warning('Queries SQL nao presentes em %s', resolved_path)
             return
 
-        with self.engine.connect() as connection:
-            for statement in statements:
-                try:
-                    connection.execute(text(statement))
-                except SQLAlchemyError as exc:
-                    logger.exception('Erro ao executar query: %s', statement)
-                    raise exc from exc
-            connection.commit()
+        for statement in statements:
+            try:
+                self.connection.execute(text(statement))
+            except SQLAlchemyError as exc:
+                logger.exception('Erro ao executar query: %s', statement)
+                raise exc from exc
 
-    def execute_raw_query(
+    def read_raw_query(
         self, raw_sql: str | TextClause, params: Optional[dict] = None
     ) -> Sequence[dict[str, Any]]:
         with self.engine.connect() as connection:
@@ -67,11 +66,18 @@ class DatabaseManager(DatabaseInterface):
 
             result: Result = connection.execute(raw_sql, params or {})
 
-            if not result.returns_rows:
-                connection.commit()
-                return []
-
             return [dict(row) for row in result.mappings()]
+
+    def write_raw_query(
+        self, raw_sql: str | TextClause, params: Optional[dict] = None
+    ) -> None:
+        if isinstance(raw_sql, str):
+            raw_sql = text(raw_sql)
+
+        self.connection.execute(raw_sql, params or {})
+
+    def commit(self) -> None:
+        self.connection.commit()
 
     @staticmethod
     def _resolve_script_path(script_path: Optional[Path]) -> Path:
@@ -118,7 +124,7 @@ class SingletonDB(SingletonDBInterface):
 
     def __new__(cls, database_url: str):
         if cls._instance is None:
-            cls._instance = DatabaseManager(database_url)
+            cls._instance = DatabaseManager(database_url, False)
         return cls._instance
 
 
@@ -172,9 +178,10 @@ class CollectorDB(CollectorInterface):
 
         results = self.db_manager.execute_raw_query(sql_query)
         objects: List[ObjectDBInterface] = []
+        factory = FactoryObjectDB()
 
         for row in results:
-            obj = FactoryObjectDB().create_instance(
+            obj = factory.create_instance(
                 filter.object_type, row, self.db_manager, True
             )
             objects.append(obj)

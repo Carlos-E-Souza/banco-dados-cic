@@ -1,5 +1,7 @@
 from typing import Any, ClassVar
 
+from sqlalchemy import text
+
 from src.interfaces.interfaces import DatabaseInterface, ObjectDBInterface
 
 
@@ -27,12 +29,13 @@ class ObjetoDB(ObjectDBInterface):
 
         sql_update = (
             f'UPDATE {self.table_name} SET '
-            + ', '.join(f'{k} = ?' for k in params.keys())
+            + ', '.join(f'{k} = :{k}' for k in params.keys())
             + ' WHERE '
-            + ' AND '.join(f'{k} = ?' for k in conditions.keys())
+            + ' AND '.join(f'{k} = :{k}' for k in conditions.keys())
         )
 
-        self._db.execute_raw_query(sql_update, conditions | params)
+        self._db.write_raw_query(sql_update, conditions | params)
+        self._db.commit()
 
     def _insert_in_db(self) -> None:
         params, conditions = self._get_values()
@@ -41,11 +44,18 @@ class ObjetoDB(ObjectDBInterface):
             f'INSERT INTO {self.table_name} ( '
             + ', '.join(params.keys())
             + ' ) VALUES ( '
-            + ', '.join('?' for _ in params)
+            + ', '.join(f':{k}' for k in params.keys())
             + ' )'
         )
 
-        self._db.execute_raw_query(sql_insert, params)
+        result = self._db.connection.execute(text(sql_insert), params)
+
+        last_id = result.lastrowid
+
+        pk_field = self.PK_FIELDS[0]
+        setattr(self, pk_field, last_id)
+
+        self._in_db = True
 
     def delete(self) -> None:
         _, conditions = self._get_values()
@@ -53,11 +63,13 @@ class ObjetoDB(ObjectDBInterface):
         sql_delete = (
             f'DELETE FROM {self.table_name} '
             + 'WHERE '
-            + ' AND '.join(f'{k} = ?' for k in conditions.keys())
+            + ' AND '.join(f'{k} = :{k}' for k in conditions.keys())
         )
 
-        self._db.execute_raw_query(sql_delete, conditions)
+        self._db.write_raw_query(sql_delete, conditions)
+        self._db.commit()
         self._in_db = False
+        setattr(self, self.PK_FIELDS[0], None)
 
     def _get_values(self) -> tuple[dict[str, Any], dict[str, Any]]:
         params = {}
@@ -94,7 +106,10 @@ class AvaliacaoDB(ObjetoDB):
         in_db: bool = False,
     ) -> None:
         super().__init__(db, in_db)
-        self.cod_aval = data['cod_aval']
+        if in_db:
+            self.cod_aval = data['cod_aval']
+        else:
+            self.cod_aval = None
         self.cod_servico = data['cod_servico']
         self.cod_morador = data['cod_morador']
         self.nota_serv = data['nota_serv']
@@ -115,7 +130,10 @@ class CargoDB(ObjetoDB):
         in_db: bool = False,
     ) -> None:
         super().__init__(db, in_db)
-        self.cod_cargo = data['cod_cargo']
+        if in_db:
+            self.cod_cargo = data['cod_cargo']
+        else:
+            self.cod_cargo = None
         self.nome = data['nome']
         self.descricao = data['descricao']
 
@@ -133,7 +151,10 @@ class EmailDB(ObjetoDB):
         in_db: bool = False,
     ) -> None:
         super().__init__(db, in_db)
-        self.cod_email = data['cod_email']
+        if in_db:
+            self.cod_email = data['cod_email']
+        else:
+            self.cod_email = None
         self.cod_func = data['cod_func']
         self.cod_morador = data['cod_morador']
         self.email = data['email']
@@ -159,7 +180,10 @@ class FuncionarioDB(ObjetoDB):
         in_db: bool = False,
     ) -> None:
         super().__init__(db, in_db)
-        self.cod_func = data['cod_func']
+        if in_db:
+            self.cod_func = data['cod_func']
+        else:
+            self.cod_func = None
         self.orgao_pub = data['orgao_pub']
         self.cargo = data['cargo']
         self.cpf = data['cpf']
@@ -181,7 +205,10 @@ class LocalDB(ObjetoDB):
         in_db: bool = False,
     ) -> None:
         super().__init__(db, in_db)
-        self.cod_local = data['cod_local']
+        if in_db:
+            self.cod_local = data['cod_local']
+        else:
+            self.cod_local = None
         self.estado = data['estado']
         self.municipio = data['municipio']
         self.bairro = data['bairro']
@@ -201,7 +228,10 @@ class OcorrenciaDB(ObjetoDB):
         in_db: bool = False,
     ) -> None:
         super().__init__(db, in_db)
-        self.cod_oco = data['cod_oco']
+        if in_db:
+            self.cod_oco = data['cod_oco']
+        else:
+            self.cod_oco = None
         self.cod_tipo = data['cod_tipo']
         self.cod_local = data['cod_local']
         self.cod_morador = data['cod_morador']
@@ -222,7 +252,10 @@ class OrgaoPublicoDB(ObjetoDB):
         in_db: bool = False,
     ) -> None:
         super().__init__(db, in_db)
-        self.cod_orgao = data['cod_orgao']
+        if in_db:
+            self.cod_orgao = data['cod_orgao']
+        else:
+            self.cod_orgao = None
         self.nome = data['nome']
         self.estado = data['estado']
         self.descr = data['descr']
@@ -243,7 +276,10 @@ class MoradorDB(ObjetoDB):
         in_db: bool = False,
     ) -> None:
         super().__init__(db, in_db)
-        self.cod_morador = data['cod_morador']
+        if in_db:
+            self.cod_morador = data['cod_morador']
+        else:
+            self.cod_morador = None
         self.endereco = data['endereco']
         self.cpf = data['cpf']
         self.data_nasc = data['data_nasc']
@@ -269,7 +305,10 @@ class ServicoDB(ObjetoDB):
         in_db: bool = False,
     ) -> None:
         super().__init__(db, in_db)
-        self.cod_servico = data['cod_servico']
+        if in_db:
+            self.cod_servico = data['cod_servico']
+        else:
+            self.cod_servico = None
         self.cod_orgao = data['cod_orgao']
         self.cod_local = data['cod_local']
         self.nome = data['nome']
@@ -309,7 +348,10 @@ class TipoOcorrenciaDB(ObjetoDB):
         in_db: bool = False,
     ) -> None:
         super().__init__(db, in_db)
-        self.cod_tipo = data['cod_tipo']
+        if in_db:
+            self.cod_tipo = data['cod_tipo']
+        else:
+            self.cod_tipo = None
         self.orgao_pub = data['orgao_pub']
         self.nome = data['nome']
         self.descr = data['descr']
