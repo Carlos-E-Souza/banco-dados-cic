@@ -67,10 +67,10 @@ class FactoryObjectDBInterface(ABC):
 class Param(ABC):
     field: str
     value: Any
-    operator_logic: Literal['AND', 'OR']
+    operator_logic: Literal['AND', 'OR', 'ASC', 'DESC'] = 'AND'
 
     @abstractmethod
-    def make_sql_condition(self) -> str:
+    def make_sql_condition(self) -> tuple[str, dict[str, Any]]:
         pass  # pragma: no cover
 
 

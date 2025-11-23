@@ -170,13 +170,17 @@ class CollectorDB(CollectorInterface):
     def collect_instances(self, filter: Filter) -> Sequence[ObjectDBInterface]:
         sql_query: str = f'SELECT * FROM {filter.object_type} WHERE 1=1'
 
-        parms: List[str] = [
-            param.make_sql_condition() for param in filter.params
+        params: List[str] = [
+            param.make_sql_condition()[0] for param in filter.params
         ]
 
-        sql_query += ' ' + ' '.join(str(p) for p in parms)
+        params_dict: dict[str, Any] = {
+            param.make_sql_condition()[1] for param in filter.params
+        }
 
-        results = self.db_manager.execute_raw_query(sql_query)
+        sql_query += ' ' + ' '.join(params)
+
+        results = self.db_manager.read_raw_query(sql_query, params_dict)
         objects: List[ObjectDBInterface] = []
         factory = FactoryObjectDB()
 
