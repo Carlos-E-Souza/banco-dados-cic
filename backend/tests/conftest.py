@@ -4,6 +4,7 @@ import pytest
 from testcontainers.mysql import MySqlContainer
 
 from src.db.db import DatabaseManager
+from src.db.models import LocalDB
 
 
 @pytest.fixture(scope='session')
@@ -26,12 +27,13 @@ def db_url(my_sql_container):
 
 
 @pytest.fixture
-def db_manager(db_url: str):
+def db_manager(db_url: str) -> DatabaseManager:
     db = DatabaseManager(db_url, False)
     db.write_raw_query('DROP DATABASE IF EXISTS PROJETO1BD;')
     db.commit()
     db.create_schema_from_script()
-    return db
+    yield db
+    db.connection.close()
 
 
 @pytest.fixture
@@ -39,3 +41,29 @@ def mock_db():
     mock = MagicMock(spec=DatabaseManager)
     mock.connection = MagicMock()
     return mock
+
+
+@pytest.fixture
+def db_with_data(db_manager: DatabaseManager) -> DatabaseManager:
+    LocalDB(
+        db_manager,
+        {
+            'estado': 'estado',
+            'municipio': 'municipio',
+            'bairro': 'bairro',
+            'endereco': 'endereco',
+        },
+    ).update()
+    LocalDB(
+        db_manager,
+        {
+            'estado': 'estado',
+            'municipio': 'municipio',
+            'bairro': 'bairro',
+            'endereco': 'endereco',
+        },
+    ).update()
+
+    db_manager.commit()
+
+    return db_manager

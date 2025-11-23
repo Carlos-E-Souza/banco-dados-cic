@@ -160,7 +160,7 @@ class FactoryObjectDB(FactoryObjectDBInterface):
             raise ValueError(f'Unknown object type: {type}')
 
         obj_class = self.registry[type]
-        return obj_class(db, data, in_db)
+        return obj_class(db, data, in_db)  # type: ignore
 
 
 class CollectorDB(CollectorInterface):
@@ -168,15 +168,18 @@ class CollectorDB(CollectorInterface):
         self.db_manager = db_manager
 
     def collect_instances(self, filter: Filter) -> Sequence[ObjectDBInterface]:
-        sql_query: str = f'SELECT * FROM {filter.object_type} WHERE 1=1'
+        sql_query: str = (
+            f'SELECT * FROM {filter.object_type.upper()} ' + 'WHERE 1=1'
+        )
 
         params: List[str] = [
             param.make_sql_condition()[0] for param in filter.params
         ]
 
-        params_dict: dict[str, Any] = {
-            param.make_sql_condition()[1] for param in filter.params
-        }
+        params_dict: dict[str, Any] = {}
+
+        for param in filter.params:
+            params_dict.update(param.make_sql_condition()[1])
 
         sql_query += ' ' + ' '.join(params)
 
@@ -186,7 +189,7 @@ class CollectorDB(CollectorInterface):
 
         for row in results:
             obj = factory.create_instance(
-                filter.object_type, row, self.db_manager, True
+                filter.object_type.lower(), row, self.db_manager, True
             )
             objects.append(obj)
 

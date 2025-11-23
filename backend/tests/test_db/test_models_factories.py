@@ -18,6 +18,7 @@ from src.db.models import (
 
 def test_avaliacao_factory_and_model(mock_db):
     data = {
+        'cod_aval': 1,
         'cod_servico': 2,
         'cod_morador': 3,
         'nota_serv': 5,
@@ -32,9 +33,13 @@ def test_avaliacao_factory_and_model(mock_db):
     assert obj.cod_aval is None
     assert obj.nota_serv == data['nota_serv']
 
+    obj = FactoryObjectDB().create_instance('avaliacao', data, mock_db, True)
+    assert obj.cod_aval == 1
+
 
 def test_cargo_factory_and_model(mock_db):
     data = {
+        'cod_cargo': 1,
         'nome': 'Manager',
         'descricao': 'Manages things',
     }
@@ -43,6 +48,9 @@ def test_cargo_factory_and_model(mock_db):
     assert obj.table_name == 'CARGO'
     assert obj.cod_cargo is None
     assert obj.nome == 'Manager'
+
+    obj = FactoryObjectDB().create_instance('cargo', data, mock_db, True)
+    assert obj.cod_cargo == 1
 
 
 def test_email_factory_and_model(mock_db):
@@ -57,6 +65,9 @@ def test_email_factory_and_model(mock_db):
     assert obj.table_name == 'EMAIL'
     assert obj.cod_email is None
     assert obj.email == 'test@example.com'
+
+    obj = FactoryObjectDB().create_instance('email', data, mock_db, True)
+    assert obj.cod_email == 1
 
 
 def test_funcionario_factory_and_model(mock_db):
@@ -77,6 +88,9 @@ def test_funcionario_factory_and_model(mock_db):
     assert obj.cod_func is None
     assert obj.cpf == '12345678901'
 
+    obj = FactoryObjectDB().create_instance('funcionario', data, mock_db, True)
+    assert obj.cod_func == 1
+
 
 def test_local_factory_and_model(mock_db):
     data = {
@@ -93,6 +107,9 @@ def test_local_factory_and_model(mock_db):
     assert obj.table_name == 'LOCALIDADE'
     assert obj.cod_local is None
     assert obj.estado == 'DF'
+
+    obj = FactoryObjectDB().create_instance('localidade', data, mock_db, True)
+    assert obj.cod_local == 1
 
 
 def test_ocorrencia_factory_and_model(mock_db):
@@ -112,6 +129,9 @@ def test_ocorrencia_factory_and_model(mock_db):
     assert obj.cod_oco is None
     assert obj.status == 'OPEN'
 
+    obj = FactoryObjectDB().create_instance('ocorrencia', data, mock_db, True)
+    assert obj.cod_oco == 1
+
 
 def test_orgao_publico_factory_and_model(mock_db):
     data = {
@@ -130,6 +150,11 @@ def test_orgao_publico_factory_and_model(mock_db):
     assert obj.cod_orgao is None
     assert obj.nome == 'Orgao 1'
 
+    obj = FactoryObjectDB().create_instance(
+        'orgao_publico', data, mock_db, True
+    )
+    assert obj.cod_orgao == 1
+
 
 def test_morador_factory_and_model(mock_db):
     data = {
@@ -145,6 +170,9 @@ def test_morador_factory_and_model(mock_db):
     assert obj.table_name == 'MORADOR'
     assert obj.cod_morador is None
     assert obj.cpf == '00000000000'
+
+    obj = FactoryObjectDB().create_instance('morador', data, mock_db, True)
+    assert obj.cod_morador == 1
 
 
 def test_servico_factory_and_model(mock_db):
@@ -164,6 +192,9 @@ def test_servico_factory_and_model(mock_db):
     assert obj.table_name == 'SERVICO'
     assert obj.cod_servico is None
     assert obj.nome == 'Servico 1'
+
+    obj = FactoryObjectDB().create_instance('servico', data, mock_db, True)
+    assert obj.cod_servico == 1
 
 
 def test_telefone_factory_and_model(mock_db):
@@ -191,6 +222,11 @@ def test_tipo_ocorrencia_factory_and_model(mock_db):
     assert obj.table_name == 'TIPO_OCORRENCIA'
     assert obj.cod_tipo is None
     assert obj.nome == 'Tipo 1'
+
+    obj = FactoryObjectDB().create_instance(
+        'tipo_ocorrencia', data, mock_db, True
+    )
+    assert obj.cod_tipo == 1
 
 
 def test_objetodb_sql_generation(mock_db):

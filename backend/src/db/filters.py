@@ -47,7 +47,7 @@ class OrderBy(Param):
 
 class ParenthesesO(Param):
     def __init__(self) -> None:
-        super().__init__('', '', '')
+        super().__init__('', '', 'AND')
 
     @staticmethod
     def make_sql_condition() -> tuple[str, dict[str, Any]]:
@@ -56,7 +56,7 @@ class ParenthesesO(Param):
 
 class ParenthesesC(Param):
     def __init__(self) -> None:
-        super().__init__('', '', '')
+        super().__init__('', '', 'AND')
 
     @staticmethod
     def make_sql_condition() -> tuple[str, dict[str, Any]]:
