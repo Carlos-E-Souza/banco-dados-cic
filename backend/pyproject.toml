@@ -6,7 +6,7 @@ authors = [
     {name = "bruno-gabriel-muniz",email = "brunomunizlourenco@gmail.com"}
 ]
 license = {text = "MIT"}
-readme = "/../README.md"
+readme = "/README.md"
 requires-python = "<4.0, >=3.13"
 dependencies = [
     "fastapi[standard] (>=0.121.2,<0.122.0)",
