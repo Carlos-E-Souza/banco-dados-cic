@@ -21,11 +21,13 @@ CREATE TABLE ORGAO_PUBLICO (
 
 CREATE TABLE FUNCIONARIO (
     cpf VARCHAR(11) NOT NULL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
     orgao_pub INT NOT NULL,
     cargo INT NOT NULL,
     data_nasc DATE NOT NULL,
     inicio_contrato DATE NOT NULL,
     fim_contrato DATE,
+    senha VARCHAR(100) NOT NULL,
     FOREIGN KEY (orgao_pub) REFERENCES ORGAO_PUBLICO(cod_orgao)
         ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (cargo) REFERENCES CARGO(cod_cargo)
@@ -46,16 +48,18 @@ CREATE TABLE LOCALIDADE (
     cod_local INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     estado VARCHAR(30) NOT NULL,
     municipio VARCHAR(100) NOT NULL,
-    bairro VARCHAR(100) NOT NULL,
-    endereco VARCHAR(200) NOT NULL
+    bairro VARCHAR(100) NOT NULL
 );
 
 
 CREATE TABLE MORADOR (
     cpf VARCHAR(11) NOT NULL PRIMARY KEY,
-    endereco INT NOT NULL,
+    nome VARCHAR(100) NOT NULL,
+    cod_local INT NOT NULL,
+    endereco VARCHAR(200) NOT NULL,
     data_nasc DATE NOT NULL,
-    FOREIGN KEY (endereco) REFERENCES LOCALIDADE(cod_local)
+    senha VARCHAR(100) NOT NULL,
+    FOREIGN KEY (cod_local) REFERENCES LOCALIDADE(cod_local)
         ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -95,9 +99,11 @@ CREATE TABLE OCORRENCIA (
     cod_oco INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     cod_tipo INT NOT NULL,
     cod_local INT NOT NULL,
+    endereco VARCHAR(200) NOT NULL,
     cod_morador INT NOT NULL,
     data DATE NOT NULL,
-    status VARCHAR(10) NOT NULL,
+    tipo_status VARCHAR(10) NOT NULL,
+    descr VARCHAR(200),
     FOREIGN KEY (cod_tipo) REFERENCES TIPO_OCORRENCIA(cod_tipo)
         ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (cod_local) REFERENCES LOCALIDADE(cod_local)
@@ -110,25 +116,28 @@ CREATE TABLE OCORRENCIA (
 CREATE TABLE SERVICO (
     cod_servico INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     cod_orgao INT NOT NULL,
-    cod_local INT NOT NULL,
+    cod_ocorrencia INT NOT NULL,
     nome VARCHAR(100) NOT NULL,
     descr VARCHAR(200),
     inicio_servico DATE,
     fim_servico DATE,
     FOREIGN KEY (cod_orgao) REFERENCES ORGAO_PUBLICO(cod_orgao)
         ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (cod_local) REFERENCES LOCALIDADE(cod_local)
+    FOREIGN KEY (cod_ocorrencia) REFERENCES OCORRENCIA(cod_oco)
         ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 
 CREATE TABLE AVALIACAO (
     cod_aval INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    cod_ocorrencia INT NOT NULL,
     cod_servico INT NOT NULL,
     cod_morador INT NOT NULL,
     nota_serv INT NOT NULL,
     nota_tempo INT NOT NULL,
     opiniao VARCHAR(200),
+    FOREIGN KEY (cod_ocorrencia) REFERENCES OCORRENCIA(cod_oco)
+        ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (cod_servico) REFERENCES SERVICO(cod_servico)
         ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (cod_morador) REFERENCES MORADOR(cod_morador)
