@@ -21,4 +21,4 @@ jobs:
         run: cd backend && poetry install --no-root
 
       - name: Executar testes
-        run: poetry run task test
+        run: cd backend && poetry run task test
