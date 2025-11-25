@@ -5,6 +5,7 @@ from src.db.models import (
     AvaliacaoDB,
     CargoDB,
     EmailDB,
+    FotoFuncDB,
     FuncionarioDB,
     LocalDB,
     MoradorDB,
@@ -14,18 +15,19 @@ from src.db.models import (
     TelefoneDB,
     TipoOcorrenciaDB,
 )
+from src.interfaces.interfaces import ObjectDBInterface
 
 
 def test_avaliacao_factory_and_model(mock_db):
     data = {
         'cod_aval': 1,
         'cod_servico': 2,
-        'cod_morador': 3,
+        'cpf_morador': '12345678901',
         'nota_serv': 5,
         'nota_tempo': 4,
         'opiniao': 'Good',
     }
-    obj: AvaliacaoDB = FactoryObjectDB().create_instance(
+    obj: ObjectDBInterface = FactoryObjectDB().create_instance(
         'avaliacao', data, mock_db
     )
     assert isinstance(obj, AvaliacaoDB)
@@ -34,6 +36,7 @@ def test_avaliacao_factory_and_model(mock_db):
     assert obj.nota_serv == data['nota_serv']
 
     obj = FactoryObjectDB().create_instance('avaliacao', data, mock_db, True)
+    assert isinstance(obj, AvaliacaoDB)
     assert obj.cod_aval == 1
 
 
@@ -43,13 +46,17 @@ def test_cargo_factory_and_model(mock_db):
         'nome': 'Manager',
         'descricao': 'Manages things',
     }
-    obj: CargoDB = FactoryObjectDB().create_instance('cargo', data, mock_db)
+    obj: ObjectDBInterface = FactoryObjectDB().create_instance(
+        'cargo', data, mock_db
+    )
     assert isinstance(obj, CargoDB)
     assert obj.table_name == 'CARGO'
     assert obj.cod_cargo is None
     assert obj.nome == 'Manager'
 
     obj = FactoryObjectDB().create_instance('cargo', data, mock_db, True)
+
+    assert isinstance(obj, CargoDB)
     assert obj.cod_cargo == 1
 
 
@@ -60,19 +67,21 @@ def test_email_factory_and_model(mock_db):
         'cod_morador': None,
         'email': 'test@example.com',
     }
-    obj: EmailDB = FactoryObjectDB().create_instance('email', data, mock_db)
+    obj: ObjectDBInterface = FactoryObjectDB().create_instance(
+        'email', data, mock_db
+    )
     assert isinstance(obj, EmailDB)
     assert obj.table_name == 'EMAIL'
     assert obj.cod_email is None
     assert obj.email == 'test@example.com'
 
     obj = FactoryObjectDB().create_instance('email', data, mock_db, True)
+    assert isinstance(obj, EmailDB)
     assert obj.cod_email == 1
 
 
 def test_funcionario_factory_and_model(mock_db):
     data = {
-        'cod_func': 1,
         'orgao_pub': 2,
         'cargo': 3,
         'cpf': '12345678901',
@@ -80,16 +89,27 @@ def test_funcionario_factory_and_model(mock_db):
         'inicio_contrato': '2020-01-01',
         'fim_contrato': None,
     }
-    obj: FuncionarioDB = FactoryObjectDB().create_instance(
+    obj: ObjectDBInterface = FactoryObjectDB().create_instance(
         'funcionario', data, mock_db
     )
     assert isinstance(obj, FuncionarioDB)
     assert obj.table_name == 'FUNCIONARIO'
-    assert obj.cod_func is None
     assert obj.cpf == '12345678901'
 
-    obj = FactoryObjectDB().create_instance('funcionario', data, mock_db, True)
-    assert obj.cod_func == 1
+
+def test_foto_func_factory_and_model(mock_db):
+    data = {'cod_foto': 1, 'cpf_func': '12345678901', 'imagem': 'fotoFake'}
+
+    obj: ObjectDBInterface = FactoryObjectDB().create_instance(
+        'foto_func', data, mock_db
+    )
+
+    assert isinstance(obj, FotoFuncDB)
+    assert obj.cpf_func == data['cpf_func']
+
+    obj = FactoryObjectDB().create_instance('foto_func', data, mock_db, True)
+    assert isinstance(obj, FotoFuncDB)
+    assert obj.cod_foto == data['cod_foto']
 
 
 def test_local_factory_and_model(mock_db):
@@ -98,9 +118,8 @@ def test_local_factory_and_model(mock_db):
         'estado': 'DF',
         'municipio': 'Brasilia',
         'bairro': 'Asa Norte',
-        'endereco': 'SQN 102',
     }
-    obj: LocalDB = FactoryObjectDB().create_instance(
+    obj: ObjectDBInterface = FactoryObjectDB().create_instance(
         'localidade', data, mock_db
     )
     assert isinstance(obj, LocalDB)
@@ -109,6 +128,7 @@ def test_local_factory_and_model(mock_db):
     assert obj.estado == 'DF'
 
     obj = FactoryObjectDB().create_instance('localidade', data, mock_db, True)
+    assert isinstance(obj, LocalDB)
     assert obj.cod_local == 1
 
 
@@ -117,11 +137,11 @@ def test_ocorrencia_factory_and_model(mock_db):
         'cod_oco': 1,
         'cod_tipo': 2,
         'cod_local': 3,
-        'cod_morador': 4,
+        'cpf_morador': '12345678901',
         'data': '2023-01-01',
         'status': 'OPEN',
     }
-    obj: OcorrenciaDB = FactoryObjectDB().create_instance(
+    obj: ObjectDBInterface = FactoryObjectDB().create_instance(
         'ocorrencia', data, mock_db
     )
     assert isinstance(obj, OcorrenciaDB)
@@ -130,6 +150,7 @@ def test_ocorrencia_factory_and_model(mock_db):
     assert obj.status == 'OPEN'
 
     obj = FactoryObjectDB().create_instance('ocorrencia', data, mock_db, True)
+    assert isinstance(obj, OcorrenciaDB)
     assert obj.cod_oco == 1
 
 
@@ -142,7 +163,7 @@ def test_orgao_publico_factory_and_model(mock_db):
         'data_ini': '2000-01-01',
         'data_fim': None,
     }
-    obj: OrgaoPublicoDB = FactoryObjectDB().create_instance(
+    obj: ObjectDBInterface = FactoryObjectDB().create_instance(
         'orgao_publico', data, mock_db
     )
     assert isinstance(obj, OrgaoPublicoDB)
@@ -153,26 +174,24 @@ def test_orgao_publico_factory_and_model(mock_db):
     obj = FactoryObjectDB().create_instance(
         'orgao_publico', data, mock_db, True
     )
+    assert isinstance(obj, OrgaoPublicoDB)
     assert obj.cod_orgao == 1
 
 
 def test_morador_factory_and_model(mock_db):
     data = {
-        'cod_morador': 1,
-        'endereco': 2,
+        'cod_local': 2,
         'cpf': '00000000000',
+        'nome': 'test',
+        'senha': 'secret',
         'data_nasc': '2000-01-01',
     }
-    obj: MoradorDB = FactoryObjectDB().create_instance(
+    obj: ObjectDBInterface = FactoryObjectDB().create_instance(
         'morador', data, mock_db
     )
     assert isinstance(obj, MoradorDB)
     assert obj.table_name == 'MORADOR'
-    assert obj.cod_morador is None
     assert obj.cpf == '00000000000'
-
-    obj = FactoryObjectDB().create_instance('morador', data, mock_db, True)
-    assert obj.cod_morador == 1
 
 
 def test_servico_factory_and_model(mock_db):
@@ -185,7 +204,7 @@ def test_servico_factory_and_model(mock_db):
         'inicio_servico': '2023-01-01',
         'fim_servico': None,
     }
-    obj: ServicoDB = FactoryObjectDB().create_instance(
+    obj: ObjectDBInterface = FactoryObjectDB().create_instance(
         'servico', data, mock_db
     )
     assert isinstance(obj, ServicoDB)
@@ -194,12 +213,13 @@ def test_servico_factory_and_model(mock_db):
     assert obj.nome == 'Servico 1'
 
     obj = FactoryObjectDB().create_instance('servico', data, mock_db, True)
+    assert isinstance(obj, ServicoDB)
     assert obj.cod_servico == 1
 
 
 def test_telefone_factory_and_model(mock_db):
-    data = {'telefone': '99999999', 'cod_morador': 1, 'DDD': '61'}
-    obj: TelefoneDB = FactoryObjectDB().create_instance(
+    data = {'telefone': '99999999', 'cpf_morador': 1, 'DDD': '61'}
+    obj: ObjectDBInterface = FactoryObjectDB().create_instance(
         'telefone', data, mock_db
     )
     assert isinstance(obj, TelefoneDB)
@@ -215,7 +235,7 @@ def test_tipo_ocorrencia_factory_and_model(mock_db):
         'nome': 'Tipo 1',
         'descr': 'Desc',
     }
-    obj: TipoOcorrenciaDB = FactoryObjectDB().create_instance(
+    obj: ObjectDBInterface = FactoryObjectDB().create_instance(
         'tipo_ocorrencia', data, mock_db
     )
     assert isinstance(obj, TipoOcorrenciaDB)
@@ -226,14 +246,18 @@ def test_tipo_ocorrencia_factory_and_model(mock_db):
     obj = FactoryObjectDB().create_instance(
         'tipo_ocorrencia', data, mock_db, True
     )
+    assert isinstance(obj, TipoOcorrenciaDB)
     assert obj.cod_tipo == 1
 
 
 def test_objetodb_sql_generation(mock_db):
     data = {'cod_cargo': 1, 'nome': 'Manager', 'descricao': 'Manages things'}
-    obj: CargoDB = FactoryObjectDB().create_instance(
+    obj: ObjectDBInterface = FactoryObjectDB().create_instance(
         'cargo', data, mock_db, False
     )
+
+    assert isinstance(obj, CargoDB)
+
     assert not obj._in_db
 
     # Test Insert

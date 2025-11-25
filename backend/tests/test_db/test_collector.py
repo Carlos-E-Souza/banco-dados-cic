@@ -23,6 +23,5 @@ def test_collector(db_with_data):
     assert result[0].estado == 'estado'
     assert result[0].municipio == 'municipio'
     assert result[0].bairro == 'bairro'
-    assert result[0].endereco == 'endereco'
 
     assert result[1].cod_local == qnt_of_locals

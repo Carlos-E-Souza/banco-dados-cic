@@ -29,11 +29,10 @@ def test_save_object_in_db(db_manager: DatabaseManager):
             'estado': 'DF',
             'municipio': 'Brasília',
             'bairro': 'test',
-            'endereco': 'Rua Teste, 123',
         }
     ]
 
-    local.endereco = 'Rua Teste, 456'
+    local.bairro = 'Test'
     local.update()
     db_manager.commit()
 
@@ -47,8 +46,7 @@ def test_save_object_in_db(db_manager: DatabaseManager):
             'cod_local': 1,
             'estado': 'DF',
             'municipio': 'Brasília',
-            'bairro': 'test',
-            'endereco': 'Rua Teste, 456',
+            'bairro': 'Test',
         }
     ]
 
@@ -76,7 +74,6 @@ def test_save_object_in_db(db_manager: DatabaseManager):
             'cod_local': 2,
             'estado': 'DF',
             'municipio': 'Brasília',
-            'bairro': 'test',
-            'endereco': 'Rua Teste, 456',
+            'bairro': 'Test',
         }
     ]

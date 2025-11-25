@@ -27,7 +27,7 @@ def db_url(my_sql_container):
 
 
 @pytest.fixture
-def db_manager(db_url: str) -> DatabaseManager:
+def db_manager(db_url: str):
     db = DatabaseManager(db_url, False)
     db.write_raw_query('DROP DATABASE IF EXISTS PROJETO1BD;')
     db.commit()
@@ -51,7 +51,6 @@ def db_with_data(db_manager: DatabaseManager) -> DatabaseManager:
             'estado': 'estado',
             'municipio': 'municipio',
             'bairro': 'bairro',
-            'endereco': 'endereco',
         },
     ).update()
     LocalDB(
@@ -60,7 +59,6 @@ def db_with_data(db_manager: DatabaseManager) -> DatabaseManager:
             'estado': 'estado',
             'municipio': 'municipio',
             'bairro': 'bairro',
-            'endereco': 'endereco',
         },
     ).update()
 
