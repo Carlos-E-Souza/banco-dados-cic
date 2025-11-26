@@ -26,6 +26,7 @@ from src.db.models import (
     TelefoneDB,
     TipoOcorrenciaDB,
 )
+from src.service.security import get_password_hash
 
 
 @pytest.fixture
@@ -124,7 +125,8 @@ def data_on_db(
         },
         'morador': {
             'cpf': cpfs[0],
-            'senha': 'secret test',
+            'senha': get_password_hash('secret test'),
+            'senha_sem_hash': 'secret test',
             'data_nasc': datetime(2000, 1, 1),
             'nome': 'test',
             'cod_local': 1,
@@ -155,7 +157,8 @@ def data_on_db(
             'data_nasc': datetime(1980, 1, 1),
             'inicio_contrato': datetime(2000, 1, 1),
             'fim_contrato': None,
-            'senha': 'scret test',
+            'senha': get_password_hash('secret test'),
+            'senha_sem_hash': 'secret test',
         },
         'email_func': {
             'cpf_func': cpfs[1],

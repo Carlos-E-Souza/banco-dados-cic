@@ -166,3 +166,71 @@ def test_valid_email_and_cpf_with_invalid_cpf(client: TestClient, emails):
 
     assert rsp.status_code == HTTPStatus.BAD_REQUEST
     assert rsp.json()['detail'] == 'invalid cpf'
+
+
+def test_auth_login_post_with_morador(
+    client: TestClient, db: DatabaseManager, data_on_db
+):
+    rsp = client.post(
+        'auth/login',
+        data={
+            'username': data_on_db['email_morador']['email'],
+            'password': data_on_db['morador']['senha_sem_hash'],
+        },
+    )
+
+    assert rsp.status_code == HTTPStatus.OK
+
+    data = rsp.json()
+
+    assert data['funcionario'] is False
+    assert data['data']['cpf'] == data_on_db['morador']['cpf']
+
+
+def test_auth_login_post_with_funcionario(
+    client: TestClient, db: DatabaseManager, data_on_db
+):
+    rsp = client.post(
+        'auth/login',
+        data={
+            'username': data_on_db['email_func']['email'],
+            'password': data_on_db['funcionario']['senha_sem_hash'],
+        },
+    )
+
+    assert rsp.status_code == HTTPStatus.OK
+
+    data = rsp.json()
+
+    assert data['funcionario'] is True
+    assert data['data']['cpf'] == data_on_db['funcionario']['cpf']
+
+
+def test_auth_login_with_email_not_found(
+    client: TestClient, db: DatabaseManager, data_on_db, emails
+):
+    rsp = client.post(
+        'auth/login',
+        data={
+            'username': emails[2],
+            'password': data_on_db['funcionario']['senha_sem_hash'],
+        },
+    )
+
+    assert rsp.status_code == HTTPStatus.NOT_FOUND
+    assert rsp.json()['detail'] == 'email not found'
+
+
+def test_auth_login_with_wrong_password(
+    client: TestClient, db: DatabaseManager, data_on_db
+):
+    rsp = client.post(
+        'auth/login',
+        data={
+            'username': data_on_db['email_morador']['email'],
+            'password': 'wrong password',
+        },
+    )
+
+    assert rsp.status_code == HTTPStatus.FORBIDDEN
+    assert rsp.json()['detail'] == 'incorrect email or password'

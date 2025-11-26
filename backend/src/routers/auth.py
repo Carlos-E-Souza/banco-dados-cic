@@ -12,9 +12,10 @@ from src.db.params import EqualTo
 from src.schemas import (
     Email,
     FuncionarioSchema,
+    LoginResult,
     MoradorSchema,
 )
-from src.service.security import get_password_hash
+from src.service.security import get_password_hash, verify_password_hash
 
 auth_router = APIRouter(prefix='/auth')
 
@@ -57,7 +58,7 @@ def find_conflict(
         raise HTTPException(HTTPStatus.CONFLICT, 'email, allready in use')
 
 
-@auth_router.post('/morador', status_code=HTTPStatus.CREATED)
+@auth_router.post('/morador/', status_code=HTTPStatus.CREATED)
 def create_morador(morador: MoradorSchema, email: Email, session: T_DbSession):
 
     valid_email_end_cpf(morador.cpf, email.email)
@@ -81,7 +82,7 @@ def create_morador(morador: MoradorSchema, email: Email, session: T_DbSession):
     session.commit()
 
 
-@auth_router.post('/funcionario', status_code=HTTPStatus.CREATED)
+@auth_router.post('/funcionario/', status_code=HTTPStatus.CREATED)
 def create_funcionario(
     funcionario: FuncionarioSchema, email: Email, session: T_DbSession
 ):
@@ -105,3 +106,33 @@ def create_funcionario(
     email_db.update()
 
     session.commit()
+
+
+@auth_router.post(
+    '/login/', response_model=LoginResult, status_code=HTTPStatus.OK
+)
+def login(form_data: T_AuthRequestForm, session: T_DbSession):
+    collector = CollectorDB(session)
+    result: list[EmailDB] = collector.collect_instances(
+        Filter('email', [EqualTo('email', form_data.username)])
+    )
+
+    if len(result) == 0:
+        raise HTTPException(HTTPStatus.NOT_FOUND, 'email not found')
+    email_db: EmailDB = result[0]
+
+    if email_db.cpf_func:
+        obj: FuncionarioDB = collector.collect_instances(
+            Filter('funcionario', [EqualTo('cpf', email_db.cpf_func)])
+        )[0]
+    else:
+        obj: MoradorDB = collector.collect_instances(
+            Filter('morador', [EqualTo('cpf', email_db.cpf_morador)])
+        )[0]
+
+    if not verify_password_hash(form_data.password, obj.senha):
+        raise HTTPException(
+            HTTPStatus.FORBIDDEN, 'incorrect email or password'
+        )
+
+    return {'funcionario': isinstance(obj, FuncionarioDB), 'data': obj}

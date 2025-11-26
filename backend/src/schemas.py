@@ -32,5 +32,10 @@ class Email(BaseModel):
     email: EmailStr
 
 
+class LoginResult(BaseModel):
+    funcionario: bool
+    data: FuncionarioPublic | MoradorPublic
+
+
 class Message(BaseModel):
     message: str
