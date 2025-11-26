@@ -1,4 +1,4 @@
-from src.db.filters import (
+from src.db.params import (
     EqualTo,
     Greater,
     LessThan,

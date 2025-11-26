@@ -64,10 +64,9 @@ CREATE TABLE MORADOR (
 
 
 CREATE TABLE EMAIL (
-    cod_email INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    cpf_func VARCHAR(11),
+    email VARCHAR(200) PRIMARY KEY,
     cpf_morador VARCHAR(11),
-    email VARCHAR(200),
+    cpf_func VARCHAR(11),
     FOREIGN KEY (cpf_func) REFERENCES FUNCIONARIO(cpf)
         ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (cpf_morador) REFERENCES MORADOR(cpf)
@@ -98,7 +97,6 @@ CREATE TABLE OCORRENCIA (
     cod_oco INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     cod_tipo INT NOT NULL,
     cod_local INT NOT NULL,
-    endereco VARCHAR(200) NOT NULL,
     cpf_morador VARCHAR(11) NOT NULL,
     data DATE NOT NULL,
     tipo_status VARCHAR(10) NOT NULL,
@@ -118,7 +116,7 @@ CREATE TABLE SERVICO (
     cod_local INT NOT NULL,
     nome VARCHAR(100) NOT NULL,
     descr VARCHAR(200),
-    inicio_servico DATE,
+    inicio_servico DATE NOT NULL,
     fim_servico DATE,
     FOREIGN KEY (cod_orgao) REFERENCES ORGAO_PUBLICO(cod_orgao)
         ON DELETE CASCADE ON UPDATE CASCADE,

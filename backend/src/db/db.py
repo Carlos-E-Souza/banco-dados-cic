@@ -29,6 +29,7 @@ from src.interfaces.interfaces import (
     ObjectDBInterface,
     SingletonDBInterface,
 )
+from src.settings import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -123,7 +124,7 @@ class DatabaseManager(DatabaseInterface):
 class SingletonDB(SingletonDBInterface):
     _instance: Optional[DatabaseManager] = None
 
-    def __new__(cls, database_url: str):
+    def __new__(cls, database_url: str = Settings().DB_URL):  # type: ignore
         if cls._instance is None:
             cls._instance = DatabaseManager(database_url, False)
         return cls._instance

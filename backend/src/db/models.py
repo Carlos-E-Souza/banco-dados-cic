@@ -141,7 +141,7 @@ class CargoDB(ObjetoDB):
 class EmailDB(ObjetoDB):
     name: str = 'EMAIL'
 
-    PK_FIELDS = ['cod_email']
+    PK_FIELDS = ['email']
     NON_PK_FIELDS = ['cpf_func', 'cpf_morador', 'email']
 
     def __init__(
@@ -151,12 +151,8 @@ class EmailDB(ObjetoDB):
         in_db: bool = False,
     ) -> None:
         super().__init__(db, in_db)
-        if in_db:
-            self.cod_email = data['cod_email']
-        else:
-            self.cod_email = None
-        self.cpf_func = data['cod_func']
-        self.cpf_morador = data['cod_morador']
+        self.cpf_func = data['cpf_func']
+        self.cpf_morador = data['cpf_morador']
         self.email = data['email']
 
 
@@ -165,12 +161,14 @@ class FuncionarioDB(ObjetoDB):
 
     PK_FIELDS = ['cpf']
     NON_PK_FIELDS = [
+        'cpf',
         'orgao_pub',
         'cargo',
-        'cpf',
+        'nome',
         'data_nasc',
         'inicio_contrato',
         'fim_contrato',
+        'senha',
     ]
 
     def __init__(
@@ -183,9 +181,11 @@ class FuncionarioDB(ObjetoDB):
         self.orgao_pub = data['orgao_pub']
         self.cargo = data['cargo']
         self.cpf = data['cpf']
+        self.nome = data['nome']
         self.data_nasc = data['data_nasc']
         self.inicio_contrato = data['inicio_contrato']
         self.fim_contrato = data['fim_contrato']
+        self.senha = data['senha']
 
 
 class FotoFuncDB(ObjetoDB):
@@ -195,9 +195,10 @@ class FotoFuncDB(ObjetoDB):
     NON_PK_FIELDS = ['cpf_func', 'imagem']
 
     def __init__(
-        self, db: DatabaseInterface, data: dict[str, Any], in_db: bool
+        self, db: DatabaseInterface, data: dict[str, Any], in_db: bool = False
     ):
-        if in_db:
+        super().__init__(db, in_db)
+        if self._in_db:
             self.cod_foto = data['cod_foto']
         else:
             self.cod_foto = None
@@ -232,7 +233,13 @@ class OcorrenciaDB(ObjetoDB):
     name: str = 'OCORRENCIA'
 
     PK_FIELDS = ['cod_oco']
-    NON_PK_FIELDS = ['cod_tipo', 'cod_local', 'cpf_morador', 'data', 'status']
+    NON_PK_FIELDS = [
+        'cod_tipo',
+        'cod_local',
+        'cpf_morador',
+        'data',
+        'tipo_status',
+    ]
 
     def __init__(
         self,
@@ -249,7 +256,7 @@ class OcorrenciaDB(ObjetoDB):
         self.cod_local = data['cod_local']
         self.cpf_morador = data['cpf_morador']
         self.data = data['data']
-        self.status = data['status']
+        self.tipo_status = data['tipo_status']
 
 
 class OrgaoPublicoDB(ObjetoDB):
@@ -280,7 +287,7 @@ class MoradorDB(ObjetoDB):
     name: str = 'MORADOR'
 
     PK_FIELDS = ['cpf']
-    NON_PK_FIELDS = ['nome', 'cod_local', 'senha', 'data_nasc']
+    NON_PK_FIELDS = ['nome', 'cpf', 'cod_local', 'senha', 'data_nasc']
 
     def __init__(
         self,
@@ -332,7 +339,7 @@ class TelefoneDB(ObjetoDB):
     name: str = 'TELEFONE'
 
     PK_FIELDS = ['telefone']
-    NON_PK_FIELDS = ['cpf_morador', 'DDD']
+    NON_PK_FIELDS = ['telefone', 'cpf_morador', 'DDD']
 
     def __init__(
         self,

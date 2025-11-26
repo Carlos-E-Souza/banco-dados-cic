@@ -63,8 +63,8 @@ def test_cargo_factory_and_model(mock_db):
 def test_email_factory_and_model(mock_db):
     data = {
         'cod_email': 1,
-        'cod_func': 2,
-        'cod_morador': None,
+        'cpf_func': '23456789011',
+        'cpf_morador': None,
         'email': 'test@example.com',
     }
     obj: ObjectDBInterface = FactoryObjectDB().create_instance(
@@ -72,21 +72,18 @@ def test_email_factory_and_model(mock_db):
     )
     assert isinstance(obj, EmailDB)
     assert obj.table_name == 'EMAIL'
-    assert obj.cod_email is None
     assert obj.email == 'test@example.com'
-
-    obj = FactoryObjectDB().create_instance('email', data, mock_db, True)
-    assert isinstance(obj, EmailDB)
-    assert obj.cod_email == 1
 
 
 def test_funcionario_factory_and_model(mock_db):
     data = {
         'orgao_pub': 2,
         'cargo': 3,
+        'nome': 'nome test',
         'cpf': '12345678901',
         'data_nasc': '1990-01-01',
         'inicio_contrato': '2020-01-01',
+        'senha': 'test',
         'fim_contrato': None,
     }
     obj: ObjectDBInterface = FactoryObjectDB().create_instance(
@@ -139,7 +136,7 @@ def test_ocorrencia_factory_and_model(mock_db):
         'cod_local': 3,
         'cpf_morador': '12345678901',
         'data': '2023-01-01',
-        'status': 'OPEN',
+        'tipo_status': 'OPEN',
     }
     obj: ObjectDBInterface = FactoryObjectDB().create_instance(
         'ocorrencia', data, mock_db
@@ -147,7 +144,7 @@ def test_ocorrencia_factory_and_model(mock_db):
     assert isinstance(obj, OcorrenciaDB)
     assert obj.table_name == 'OCORRENCIA'
     assert obj.cod_oco is None
-    assert obj.status == 'OPEN'
+    assert obj.tipo_status == 'OPEN'
 
     obj = FactoryObjectDB().create_instance('ocorrencia', data, mock_db, True)
     assert isinstance(obj, OcorrenciaDB)
