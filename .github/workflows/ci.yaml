@@ -24,7 +24,7 @@ jobs:
         run: cd backend && poetry run task test
 
     env:
-      DATABASE_URL: ${{ secrets.DB_URL }}
+      DB_URL: ${{ secrets.DB_URL }}
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
       ALGORITHM: ${{ secrets.ALGORITHM }}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${{ secrets.ACCESS_TOKEN_EXPIRE_MINUTES }}
