@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 
 class MoradorPublic(BaseModel):
@@ -29,7 +29,17 @@ class FuncionarioSchema(FuncionarioPublic):
 
 
 class Email(BaseModel):
-    email: EmailStr
+    email: str
+
+
+class Telefone(BaseModel):
+    telefone: str
+    ddd: str
+
+
+class Contatos(BaseModel):
+    emails: list[Email]
+    telefones: list[Telefone] | None
 
 
 class LoginResult(BaseModel):

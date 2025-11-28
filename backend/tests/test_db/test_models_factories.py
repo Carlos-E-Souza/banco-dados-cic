@@ -215,14 +215,14 @@ def test_servico_factory_and_model(mock_db):
 
 
 def test_telefone_factory_and_model(mock_db):
-    data = {'telefone': '99999999', 'cpf_morador': 1, 'DDD': '61'}
+    data = {'telefone': '99999999', 'cpf_morador': 1, 'ddd': '61'}
     obj: ObjectDBInterface = FactoryObjectDB().create_instance(
         'telefone', data, mock_db
     )
     assert isinstance(obj, TelefoneDB)
     assert obj.table_name == 'TELEFONE'
     assert obj.telefone == '99999999'
-    assert obj.DDD == '61'
+    assert obj.ddd == '61'
 
 
 def test_tipo_ocorrencia_factory_and_model(mock_db):

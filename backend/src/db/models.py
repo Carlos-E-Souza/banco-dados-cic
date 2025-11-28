@@ -339,7 +339,7 @@ class TelefoneDB(ObjetoDB):
     name: str = 'TELEFONE'
 
     PK_FIELDS = ['telefone']
-    NON_PK_FIELDS = ['telefone', 'cpf_morador', 'DDD']
+    NON_PK_FIELDS = ['telefone', 'cpf_morador', 'ddd']
 
     def __init__(
         self,
@@ -350,7 +350,7 @@ class TelefoneDB(ObjetoDB):
         super().__init__(db, in_db)
         self.telefone = data['telefone']
         self.cpf_morador = data['cpf_morador']
-        self.DDD = data['DDD']
+        self.ddd = data['ddd']
 
 
 class TipoOcorrenciaDB(ObjetoDB):

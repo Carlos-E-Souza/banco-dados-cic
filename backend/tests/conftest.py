@@ -68,6 +68,7 @@ def db(db_url: str):
     db.commit()
     db.create_schema_from_script()
     yield db
+    db.connection.rollback()
     db.connection.close()
 
 
@@ -97,12 +98,20 @@ def faker() -> Faker:
 
 @pytest.fixture
 def telefones(faker) -> list[str]:
-    return [faker.cellphone_number() for _ in range(2)]
+    return [
+        faker.cellphone_number().replace(' ', '').replace('-', '')[-8:]
+        for _ in range(4)
+    ]
 
 
 @pytest.fixture
 def emails() -> list[str]:
-    return ['test@gmail.com', 'test@outlook.com', 'test@yahoo.com']
+    return [
+        'test@gmail.com',
+        'test@outlook.com',
+        'test@yahoo.com',
+        'test2@gmail.com',
+    ]
 
 
 @pytest.fixture
@@ -134,7 +143,7 @@ def data_on_db(
         'telefone': {
             'telefone': telefones[0][-9:],
             'cpf_morador': cpfs[0],
-            'DDD': '61',
+            'ddd': '61',
         },
         'email_morador': {
             'cpf_func': None,
@@ -197,7 +206,11 @@ def data_on_db(
             'tipo_status': 'tipo_status test',
             'descr': 'descr test',
         },
+        'telefones': telefones,
+        'cpfs': cpfs,
+        'emails': emails,
     }
+
     LocalDB(db, data['local']).update()
     LocalDB(db, data['local']).update()
 
