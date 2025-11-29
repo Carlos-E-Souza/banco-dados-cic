@@ -55,7 +55,7 @@ def test_auth_morador_post(client, db: DatabaseManager, data_on_db):
 
     result = db.read_raw_query(
         'SELECT * FROM TELEFONE WHERE telefone = :telefone',
-        {'telefone': '9' + data_on_db['telefones'][2]},
+        {'telefone': data_on_db['telefones'][2]},
     )
 
     assert len(result) == 1

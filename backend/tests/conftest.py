@@ -99,7 +99,7 @@ def faker() -> Faker:
 @pytest.fixture
 def telefones(faker) -> list[str]:
     return [
-        faker.cellphone_number().replace(' ', '').replace('-', '')[-8:]
+        '9' + (faker.cellphone_number().replace(' ', '').replace('-', '')[-8:])
         for _ in range(4)
     ]
 
@@ -142,7 +142,12 @@ def data_on_db(
             'cod_local': 1,
         },
         'telefone': {
-            'telefone': telefones[0][-9:],
+            'telefone': telefones[0],
+            'cpf_morador': cpfs[0],
+            'ddd': '61',
+        },
+        'telefone2': {
+            'telefone': telefones[1],
             'cpf_morador': cpfs[0],
             'ddd': '61',
         },
@@ -233,6 +238,11 @@ def data_on_db(
     TelefoneDB(
         db,
         data['telefone'],
+    ).update()
+
+    TelefoneDB(
+        db,
+        data['telefone2'],
     ).update()
 
     EmailDB(
