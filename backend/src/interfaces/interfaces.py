@@ -6,7 +6,6 @@ from typing import (
     List,
     Literal,
     Optional,
-    Sequence,
 )
 
 
@@ -82,5 +81,5 @@ class Filter:
 
 class CollectorInterface(ABC):
     @abstractmethod
-    def collect_instances(self, filter: Filter) -> Sequence[ObjectDBInterface]:
+    def collect_instances(self, filter: Filter) -> list[ObjectDBInterface]:
         pass  # pragma: no cover

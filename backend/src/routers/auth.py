@@ -1,10 +1,8 @@
 from http import HTTPStatus
 from typing import Annotated, Sequence
 
-from email_validator import EmailNotValidError, validate_email
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
-from validate_docbr import CPF
 
 from src.db.db import CollectorDB, DatabaseManager, Filter, SingletonDB
 from src.db.models import EmailDB, FuncionarioDB, MoradorDB, TelefoneDB
@@ -18,91 +16,13 @@ from src.schemas import (
     MoradorSchema,
     Telefone,
 )
+from src.service.sanitize import find_conflict, valid_email_cpf_and_telefone
 from src.service.security import get_password_hash, verify_password_hash
 
 auth_router = APIRouter(prefix='/auth')
 
 T_AuthRequestForm = Annotated[OAuth2PasswordRequestForm, Depends()]
 T_DbSession = Annotated[DatabaseManager, Depends(SingletonDB)]
-
-
-def valid_telefone(telefone: Telefone) -> None:
-    ddd_len = 2
-    telefone_len = 8
-    if len(telefone.ddd) != ddd_len or not telefone.ddd.isdigit():
-        raise HTTPException(
-            HTTPStatus.BAD_REQUEST, f'invalid telefone.ddd: {telefone.ddd}'
-        )
-
-    temp = telefone.telefone.replace(' ', '').replace('-', '')[-8:]
-
-    if not temp.isdigit() or len(temp) != telefone_len:
-        raise HTTPException(
-            HTTPStatus.BAD_REQUEST,
-            f'invalid telefone.telefone: {telefone.telefone}',
-        )
-
-
-def valid_email_cpf_and_telefone(
-    cpf: str, emails: list[Email], telefones: list[Telefone] | None = None
-) -> None:
-    if not CPF().validate(cpf):
-        raise HTTPException(HTTPStatus.BAD_REQUEST, f'invalid cpf: {cpf}')
-
-    for email in emails:
-        try:
-            email_str = str(email.email)
-            validate_email(email_str)
-        except EmailNotValidError:
-            raise HTTPException(
-                HTTPStatus.BAD_REQUEST, f'invalid email: {email.email}'
-            )
-
-    if not telefones:
-        return
-
-    for telefone in telefones:
-        valid_telefone(telefone)
-
-
-def find_conflict(
-    session: DatabaseManager,
-    obj: MoradorSchema | FuncionarioSchema,
-    emails: list[Email],
-    telefones: list[Telefone] | None = None,
-) -> None:
-
-    if isinstance(obj, MoradorSchema):
-        table = 'morador'
-    else:
-        table = 'funcionario'
-
-    collector = CollectorDB(session)
-    cpf_in_use = collector.collect_instances(
-        Filter(table, [EqualTo('cpf', obj.cpf)])
-    )
-    if len(cpf_in_use) > 0:
-        raise HTTPException(HTTPStatus.CONFLICT, 'cpf, allready exist in db')
-
-    for email in emails:
-        email_in_use = collector.collect_instances(
-            Filter('email', [EqualTo('email', email.email)])
-        )
-        if len(email_in_use) > 0:
-            raise HTTPException(HTTPStatus.CONFLICT, 'email, allready in use')
-
-    if not telefones:
-        return
-
-    for telefone in telefones:
-        telefone_in_use = collector.collect_instances(
-            Filter('telefone', [EqualTo('telefone', telefone.telefone)])
-        )
-
-        if len(telefone_in_use) > 0:
-            raise HTTPException(
-                HTTPStatus.CONFLICT, 'telefone, allready in use'
-            )
 
 
 def create_user(

@@ -170,7 +170,7 @@ class CollectorDB(CollectorInterface):
     def __init__(self, db_manager: DatabaseManager) -> None:
         self.db_manager = db_manager
 
-    def collect_instances(self, filter: Filter) -> Sequence[ObjectDBInterface]:
+    def collect_instances(self, filter: Filter) -> list[ObjectDBInterface]:
         sql_query: str = (
             f'SELECT * FROM {filter.object_type.upper()} ' + 'WHERE 1=1'
         )

@@ -111,13 +111,14 @@ def emails() -> list[str]:
         'test@outlook.com',
         'test@yahoo.com',
         'test2@gmail.com',
+        'sem_telefone@gmail.com',
     ]
 
 
 @pytest.fixture
 def cpfs():
     cpf = CPF()
-    cpfs = cpf.generate_list(3)
+    cpfs = cpf.generate_list(4)
     return cpfs
 
 
@@ -149,6 +150,19 @@ def data_on_db(
             'cpf_func': None,
             'cpf_morador': cpfs[0],
             'email': emails[0],
+        },
+        'morador_sem_telefone': {
+            'cpf': cpfs[3],
+            'senha': get_password_hash('secret test'),
+            'senha_sem_hash': 'secret test',
+            'data_nasc': datetime(2000, 1, 1),
+            'nome': 'test',
+            'cod_local': 1,
+        },
+        'email_morador_sem_tel': {
+            'cpf_func': None,
+            'cpf_morador': cpfs[3],
+            'email': emails[4],
         },
         'orgao_publico': {
             'nome': 'orgão test',
@@ -225,6 +239,10 @@ def data_on_db(
         db,
         data['email_morador'],
     ).update()
+
+    MoradorDB(db, data['morador_sem_telefone']).update()
+
+    EmailDB(db, data['email_morador_sem_tel']).update()
 
     OrgaoPublicoDB(
         db,

@@ -42,6 +42,11 @@ class Contatos(BaseModel):
     telefones: list[Telefone] | None
 
 
+class Morador_Com_Contatos(BaseModel):
+    contatos: Contatos
+    morador: MoradorPublic
+
+
 class LoginResult(BaseModel):
     funcionario: bool
     data: FuncionarioPublic | MoradorPublic
