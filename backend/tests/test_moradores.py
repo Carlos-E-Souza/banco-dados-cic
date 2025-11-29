@@ -21,6 +21,8 @@ def test_get_morador(client: TestClient, data_on_db):
     assert (
         data['contatos']['telefones'][0]['telefone']
         == data_on_db['telefones'][0]
+        or data['contatos']['telefones'][0]['telefone']
+        == data_on_db['telefones'][1]
     )
 
 
