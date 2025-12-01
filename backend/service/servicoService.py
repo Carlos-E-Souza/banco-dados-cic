@@ -1,53 +1,31 @@
 import logging
 from typing import Any, Dict, Optional, Sequence
 
-from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from ..persistence.databaseManager import DatabaseManager
+from ..persistence.servicoRepository import ServicoRepository
 
 logger = logging.getLogger(__name__)
 
 _UNSET = object()
 
-_SERVICO_BASE_QUERY = (
-    "SELECT \n"
-    "\ts.cod_servico,\n"
-    "\ts.cod_orgao,\n"
-    "\torg.nome AS orgao_nome,\n"
-    "\ts.cod_ocorrencia,\n"
-    "\toco.tipo_status AS ocorrencia_status,\n"
-    "\ts.nome,\n"
-    "\ts.descr,\n"
-    "\ts.inicio_servico,\n"
-    "\ts.fim_servico,\n"
-    "\ts.nota_media_servico\n"
-    "FROM SERVICO AS s\n"
-    "LEFT JOIN ORGAO_PUBLICO AS org ON org.cod_orgao = s.cod_orgao\n"
-    "LEFT JOIN OCORRENCIA AS oco ON oco.cod_oco = s.cod_ocorrencia"
-)
-
-
 class ServicoService:
     
-    def __init__(self, db_manager: "DatabaseManager") -> None:
-        self._db_manager = db_manager
+    def __init__(self, db_manager: DatabaseManager) -> None:
+        self._repository = ServicoRepository(db_manager)
 
 
     def list_servicos(self) -> Sequence[dict[str, Any]]:
-        sql = f"{_SERVICO_BASE_QUERY}\nORDER BY s.nome"
-        return self._db_manager.execute_raw_query(sql)
+        return self._repository.list_servicos()
 
 
     def get_servico_by_id(self, cod_servico: int) -> Optional[dict[str, Any]]:
-        sql = f"{_SERVICO_BASE_QUERY}\nWHERE s.cod_servico = :cod_servico"
-        result = self._db_manager.execute_raw_query(sql, {"cod_servico": cod_servico})
-        return result[0] if result else None
+        return self._repository.get_servico_by_id(cod_servico)
 
 
     def get_servicos_by_ocorrencia(self, cod_ocorrencia: int) -> Sequence[dict[str, Any]]:
-        sql = f"{_SERVICO_BASE_QUERY}\nWHERE s.cod_ocorrencia = :cod_ocorrencia\nORDER BY s.nome"
-        return self._db_manager.execute_raw_query(sql, {"cod_ocorrencia": cod_ocorrencia})
+        return self._repository.get_servicos_by_ocorrencia(cod_ocorrencia)
 
 
     def create_servico(
@@ -60,31 +38,18 @@ class ServicoService:
         inicio_servico: Optional[str],
         fim_servico: Optional[str],
     ) -> dict[str, Any]:
-        insert_sql = (
-            "INSERT INTO SERVICO (cod_orgao, cod_ocorrencia, nome, descr, inicio_servico, fim_servico) "
-            "VALUES (:cod_orgao, :cod_ocorrencia, :nome, :descr, :inicio_servico, :fim_servico)"
-        )
-
         try:
-            with self._db_manager.engine.begin() as connection:
-                result = connection.execute(
-                    text(insert_sql),
-                    {
-                        "cod_orgao": cod_orgao,
-                        "cod_ocorrencia": cod_ocorrencia,
-                        "nome": nome,
-                        "descr": descr,
-                        "inicio_servico": inicio_servico,
-                        "fim_servico": fim_servico,
-                    },
-                )
-                cod_servico = result.lastrowid
-                if not cod_servico:
-                    cod_servico = connection.execute(text("SELECT LAST_INSERT_ID()")).scalar_one()
+            cod_servico = self._repository.create_servico(
+                cod_orgao=cod_orgao,
+                cod_ocorrencia=cod_ocorrencia,
+                nome=nome,
+                descr=descr,
+                inicio_servico=inicio_servico,
+                fim_servico=fim_servico,
+            )
         except SQLAlchemyError:
             logger.exception("Erro ao criar servico")
             raise
-
         created = self.get_servico_by_id(int(cod_servico))
         if created is None:
             raise RuntimeError("Servico recem criado nao encontrado")
@@ -118,18 +83,7 @@ class ServicoService:
 
         if fields_to_update:
             try:
-                with self._db_manager.engine.begin() as connection:
-                    set_clause = ", ".join(
-                        f"{column} = :{column}" for column in fields_to_update
-                    )
-                    params = {**fields_to_update, "cod_servico": cod_servico}
-                    connection.execute(
-                        text(
-                            f"UPDATE SERVICO SET {set_clause} "
-                            "WHERE cod_servico = :cod_servico"
-                        ),
-                        params,
-                    )
+                self._repository.update_servico(cod_servico, fields_to_update)
             except SQLAlchemyError:
                 logger.exception("Erro ao atualizar servico %s", cod_servico)
                 raise
@@ -139,11 +93,7 @@ class ServicoService:
 
     def delete_servico(self, cod_servico: int) -> None:
         try:
-            with self._db_manager.engine.begin() as connection:
-                connection.execute(
-                    text("DELETE FROM SERVICO WHERE cod_servico = :cod_servico"),
-                    {"cod_servico": cod_servico},
-                )
+            self._repository.delete_servico(cod_servico)
         except SQLAlchemyError:
             logger.exception("Erro ao deletar servico %s", cod_servico)
             raise

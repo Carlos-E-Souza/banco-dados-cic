@@ -1,53 +1,31 @@
 import logging
 from typing import Any, Dict, Optional, Sequence
 
-from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
+from ..persistence.cargoRepository import CargoRepository
 from ..persistence.databaseManager import DatabaseManager
 
 logger = logging.getLogger(__name__)
 
 _UNSET = object()
 
-_CARGO_BASE_QUERY = (
-    "SELECT "
-    "\tcargo.cod_cargo, "
-    "\tcargo.nome, "
-    "\tcargo.descricao "
-    "FROM CARGO AS cargo"
-)
-
-
 class CargoService:
-    def __init__(self, db_manager: "DatabaseManager") -> None:
-        self._db_manager = db_manager
+    def __init__(self, db_manager: DatabaseManager) -> None:
+        self._repository = CargoRepository(db_manager)
 
 
     def list_cargos(self) -> Sequence[dict[str, Any]]:
-        sql = f"{_CARGO_BASE_QUERY}\nORDER BY cargo.nome"
-        return self._db_manager.execute_raw_query(sql)
+        return self._repository.list_cargos()
 
 
     def get_cargo_by_id(self, cod_cargo: int) -> Optional[dict[str, Any]]:
-        sql = f"{_CARGO_BASE_QUERY}\nWHERE cargo.cod_cargo = :cod_cargo"
-        result = self._db_manager.execute_raw_query(sql, {"cod_cargo": cod_cargo})
-        return result[0] if result else None
+        return self._repository.get_cargo_by_id(cod_cargo)
 
 
     def create_cargo(self, *, nome: str, descricao: Optional[str]) -> dict[str, Any]:
-        insert_sql = "INSERT INTO CARGO (nome, descricao) VALUES (:nome, :descricao)"
-
         try:
-            with self._db_manager.engine.begin() as connection:
-                result = connection.execute(
-                    text(insert_sql),
-                    {"nome": nome, "descricao": descricao},
-                )
-                cod_cargo = result.lastrowid
-                if not cod_cargo:
-                    cod_cargo_result = connection.execute(text("SELECT LAST_INSERT_ID()"))
-                    cod_cargo = cod_cargo_result.scalar_one()
+            cod_cargo = self._repository.create_cargo(nome=nome, descricao=descricao)
         except SQLAlchemyError:
             logger.exception("Erro ao criar cargo")
             raise
@@ -73,15 +51,7 @@ class CargoService:
 
         if fields_to_update:
             try:
-                with self._db_manager.engine.begin() as connection:
-                    set_clause = ", ".join(
-                        f"{column} = :{column}" for column in fields_to_update
-                    )
-                    params = {**fields_to_update, "cod_cargo": cod_cargo}
-                    connection.execute(
-                        text(f"UPDATE CARGO SET {set_clause} WHERE cod_cargo = :cod_cargo"),
-                        params,
-                    )
+                self._repository.update_cargo(cod_cargo, fields_to_update)
             except SQLAlchemyError:
                 logger.exception("Erro ao atualizar cargo %s", cod_cargo)
                 raise
@@ -91,11 +61,7 @@ class CargoService:
 
     def delete_cargo(self, cod_cargo: int) -> None:
         try:
-            with self._db_manager.engine.begin() as connection:
-                connection.execute(
-                    text("DELETE FROM CARGO WHERE cod_cargo = :cod_cargo"),
-                    {"cod_cargo": cod_cargo},
-                )
+            self._repository.delete_cargo(cod_cargo)
         except SQLAlchemyError:
             logger.exception("Erro ao deletar cargo %s", cod_cargo)
             raise
