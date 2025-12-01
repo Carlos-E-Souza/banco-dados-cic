@@ -23,6 +23,8 @@ export type Funcionario = {
 	data_nasc: string;
 	inicio_contrato: string;
 	fim_contrato?: string | null;
+	email?: string | null;
+	foto?: string | null;
 };
 
 export type FuncionarioFormState = {
@@ -33,4 +35,7 @@ export type FuncionarioFormState = {
 	dataNasc: string;
 	inicioContrato: string;
 	fimContrato: string;
+	email: string;
+	senha: string;
+	foto: string;
 };

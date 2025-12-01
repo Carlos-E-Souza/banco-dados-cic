@@ -3,12 +3,12 @@
 import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
 import AppFooter from "../../../components/AppFooter";
+import AlertPopup from "../../../components/AlertPopup";
 import AvaliacaoSearchBar from "../../../components/avaliacoes/AvaliacaoSearchBar";
 import AvaliacaoTable from "../../../components/avaliacoes/AvaliacaoTable";
 import DescriptionModal from "../../../components/avaliacoes/DescriptionModal";
 import ServiceDetailsModal from "../../../components/avaliacoes/ServiceDetailsModal";
 import { buildAvaliacaoDisplay } from "../../../components/avaliacoes/helpers";
-import { mockAvaliacoes, mockMoradores, mockOcorrencias, mockServicos } from "../../../components/avaliacoes/mockData";
 import { Avaliacao, AvaliacaoDisplay, Morador } from "../../../components/avaliacoes/types";
 import Navbar from "../../../components/Navbar";
 import { useUser } from "../../../components/UserContext";
@@ -16,21 +16,128 @@ import { Ocorrencia } from "../../../components/ocorrencias/types";
 import RelatedOcorrenciaModal from "../../../components/servicos/RelatedOcorrenciaModal";
 import { Servico } from "../../../components/servicos/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 const funcionarioLinks = [
 	{ href: "/menu_funcionario", label: "Menu" },
-	{ href: "/menu_funcionario/avaliacoes", label: "Avaliações" },
 ];
+
+const parseNumber = (value: unknown, fallback = 0): number => {
+	const parsed = Number(value);
+	return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const parseOptionalNumber = (value: unknown): number | null => {
+	const parsed = Number(value);
+	return Number.isFinite(parsed) ? parsed : null;
+};
+
+const parseString = (value: unknown, fallback = ""): string =>
+	typeof value === "string" ? value : fallback;
+
+const parseOptionalString = (value: unknown): string | null => {
+	if (value === null || value === undefined) {
+		return null;
+	}
+	return typeof value === "string" ? value : String(value);
+};
+
+const normalizeOcorrenciaRecord = (raw: unknown): Ocorrencia => {
+	const record = (raw ?? {}) as Record<string, unknown>;
+	const moradorCpfRaw = record.morador_cpf ?? record.cpf_morador ?? record.moradorCpf ?? record.cpf;
+
+	return {
+		cod_oco: parseNumber(record.cod_oco ?? record.cod_ocorrencia ?? record.codOcorrencia ?? record.codOco, 0),
+		cod_tipo: parseNumber(record.cod_tipo ?? record.codTipo, 0),
+		tipo_nome: parseString(record.tipo_nome ?? record.tipoNome, ""),
+		cod_local: parseOptionalNumber(record.cod_local ?? record.codLocal),
+		cod_servico: parseOptionalNumber(record.cod_servico ?? record.codServico),
+		morador_cpf:
+			typeof moradorCpfRaw === "string"
+				? moradorCpfRaw
+				: typeof moradorCpfRaw === "number"
+					? String(moradorCpfRaw)
+					: moradorCpfRaw != null
+						? String(moradorCpfRaw)
+						: null,
+		estado: parseString(record.estado, ""),
+		cidade: parseString(record.cidade, ""),
+		bairro: parseString(record.bairro, ""),
+		endereco: parseString(record.endereco, ""),
+		data: parseString(record.data ?? record.data_ocorrencia ?? record.dataOcorrencia, ""),
+		tipo_status: parseOptionalString(record.tipo_status ?? record.status),
+		descr: parseOptionalString(record.descr ?? record.descricao),
+	};
+};
+
+const normalizeMoradorRecord = (raw: unknown): Morador => {
+	const record = (raw ?? {}) as Record<string, unknown>;
+
+	return {
+		cpf_morador: parseNumber(
+			record.cpf_morador ?? record.cpfMorador ?? record.cpf ?? record.cod_morador ?? record.codMorador,
+			0,
+		),
+		nome: parseString(record.nome ?? record.nome_morador ?? record.nomeMorador, ""),
+		email: parseOptionalString(record.email ?? record.email_morador ?? record.emailMorador),
+	};
+};
+
+const normalizeServicoRecord = (raw: unknown, ocorrenciasList: Ocorrencia[]): Servico => {
+	const record = (raw ?? {}) as Record<string, unknown>;
+	const codOcorrencia = parseNumber(
+		record.cod_ocorrencia ?? record.cod_ocorre ?? record.codOcorrencia ?? record.codOcorre,
+		0,
+	);
+
+	const ocorrenciaRelacionada = (record.ocorrencia as Ocorrencia | undefined) ??
+		ocorrenciasList.find((item) => item.cod_oco === codOcorrencia) ??
+		null;
+
+	return {
+		cod_servico: parseNumber(record.cod_servico ?? record.codServico, 0),
+		cod_orgao: parseNumber(record.cod_orgao ?? record.codOrgao, 0),
+		cod_ocorrencia: codOcorrencia,
+		nome: parseString(record.nome ?? record.servico_nome ?? record.servicoNome, ""),
+		descr: parseOptionalString(record.descr ?? record.descricao),
+		inicio_servico: parseOptionalString(record.inicio_servico ?? record.inicioServico),
+		fim_servico: parseOptionalString(record.fim_servico ?? record.fimServico),
+		orgao_nome: parseOptionalString(record.orgao_nome ?? record.orgaoNome ?? record.nome_orgao),
+		ocorrencia: ocorrenciaRelacionada,
+	};
+};
+
+const normalizeAvaliacaoRecord = (raw: unknown): Avaliacao => {
+	const record = (raw ?? {}) as Record<string, unknown>;
+
+	return {
+		cod_avaliacao: parseNumber(
+			record.cod_avaliacao ?? record.codAvaliacao ?? record.cod_aval ?? record.codigo,
+			0,
+		),
+		cod_servico: parseNumber(record.cod_servico ?? record.codServico, 0),
+		cpf_morador: parseNumber(record.cpf_morador ?? record.cpfMorador ?? record.cpf, 0),
+		nota_servico: parseNumber(
+			record.nota_servico ?? record.nota_serv ?? record.notaServ ?? record.notaServico,
+			0,
+		),
+		nota_tempo: parseNumber(
+			record.nota_tempo ?? record.nota_tempo_atendimento ?? record.notaTempo ?? record.notaTempoAtendimento,
+			0,
+		),
+		opiniao: parseOptionalString(record.opiniao ?? record.descricao ?? record.comentario),
+		servico_nome: parseOptionalString(record.servico_nome ?? record.nome_servico ?? record.servicoNome),
+		morador_nome: parseOptionalString(record.morador_nome ?? record.nome_morador ?? record.moradorNome),
+	};
+};
 
 const AvaliacoesPage = () => {
 	const { isFuncionario } = useUser();
-	const [avaliacoes, setAvaliacoes] = useState<AvaliacaoDisplay[]>(() =>
-		buildAvaliacaoDisplay(mockAvaliacoes, mockServicos, mockOcorrencias, mockMoradores),
-	);
+	const [avaliacoes, setAvaliacoes] = useState<AvaliacaoDisplay[]>([]);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
-	const [errorMessage, setErrorMessage] = useState("");
+	const [alertMessage, setAlertMessage] = useState("");
+	const [alertType, setAlertType] = useState<"success" | "error">("error");
 	const [selectedServico, setSelectedServico] = useState<Servico | null>(null);
 	const [selectedOcorrencia, setSelectedOcorrencia] = useState<Ocorrencia | null>(null);
 	const [descricaoSelecionada, setDescricaoSelecionada] = useState<string | null>(null);
@@ -40,7 +147,7 @@ const AvaliacoesPage = () => {
 
 		const fetchData = async () => {
 			setIsLoading(true);
-			setErrorMessage("");
+			setAlertMessage("");
 
 			try {
 				const [avaliacoesResponse, servicosResponse, ocorrenciasResponse, moradoresResponse] = await Promise.all([
@@ -50,96 +157,15 @@ const AvaliacoesPage = () => {
 					axios.get<Morador[]>(`${API_BASE_URL}/moradores`, { signal: controller.signal }),
 				]);
 
-				const ocorrenciasData = ocorrenciasResponse.data?.length ? ocorrenciasResponse.data : mockOcorrencias;
-				const moradoresData = moradoresResponse.data?.length ? moradoresResponse.data : mockMoradores;
-				const servicosData = servicosResponse.data?.length ? servicosResponse.data : mockServicos;
-				const avaliacoesData = avaliacoesResponse.data?.length ? avaliacoesResponse.data : mockAvaliacoes;
+				const ocorrenciasData = Array.isArray(ocorrenciasResponse.data) ? ocorrenciasResponse.data : [];
+				const moradoresData = Array.isArray(moradoresResponse.data) ? moradoresResponse.data : [];
+				const servicosData = Array.isArray(servicosResponse.data) ? servicosResponse.data : [];
+				const avaliacoesData = Array.isArray(avaliacoesResponse.data) ? avaliacoesResponse.data : [];
 
-				const normalizedOcorrencias = ocorrenciasData.map((item) => ({
-					...item,
-					cod_oco: Number((item as Ocorrencia & { codOcorrencia?: number }).cod_oco ?? (item as Ocorrencia & { codOcorrencia?: number }).codOcorrencia ?? item.cod_oco),
-				}));
-
-				const normalizedMoradores = moradoresData.map((item) => ({
-					cod_morador: Number((item as Morador & { codMorador?: number }).cod_morador ?? (item as Morador & { codMorador?: number }).codMorador ?? item.cod_morador),
-					nome: (item as Morador).nome ?? (item as { nome_morador?: string }).nome_morador ?? "",
-					email: (item as Morador).email ?? null,
-				}));
-
-				const normalizedServicos = servicosData.map((servico) => {
-					const rawCodOcorrencia =
-						(servico as Servico & { cod_ocorre?: number; codOcorrencia?: number }).cod_ocorrencia ??
-						(servico as Servico & { cod_ocorre?: number; codOcorrencia?: number }).cod_ocorre ??
-						(servico as Servico & { cod_ocorre?: number; codOcorrencia?: number }).codOcorrencia ??
-						servico.cod_ocorrencia;
-
-					const codOcorrencia = Number(rawCodOcorrencia);
-					const ocorrenciaRelacionada =
-						(servico as Servico).ocorrencia ??
-						normalizedOcorrencias.find((ocorrencia) => ocorrencia.cod_oco === codOcorrencia) ??
-						null;
-
-					return {
-						...servico,
-						cod_servico: Number((servico as Servico & { codServico?: number }).cod_servico ?? (servico as Servico & { codServico?: number }).codServico ?? servico.cod_servico),
-						cod_orgao: Number((servico as Servico & { codOrgao?: number }).cod_orgao ?? (servico as Servico & { codOrgao?: number }).codOrgao ?? servico.cod_orgao),
-						cod_ocorrencia: Number.isFinite(codOcorrencia) ? codOcorrencia : 0,
-						nome: servico.nome ?? (servico as { servico_nome?: string }).servico_nome ?? "",
-						descr: servico.descr ?? (servico as { descricao?: string }).descricao ?? null,
-						inicio_servico: servico.inicio_servico ?? (servico as { inicioServico?: string }).inicioServico ?? null,
-						fim_servico: servico.fim_servico ?? (servico as { fimServico?: string }).fimServico ?? null,
-						orgao_nome: servico.orgao_nome ?? (servico as { orgaoNome?: string }).orgaoNome ?? "",
-						ocorrencia: ocorrenciaRelacionada,
-					};
-				});
-
-				const normalizedAvaliacoes = avaliacoesData.map((avaliacao) => {
-					const notaServico = Number(
-						(avaliacao as Avaliacao & { notaServ?: number }).nota_servico ??
-						(avaliacao as Avaliacao & { notaServ?: number }).notaServ ??
-						(avaliacao as Avaliacao & { notaServico?: number }).notaServico ??
-						avaliacao.nota_servico,
-					);
-					const notaTempo = Number(
-						(avaliacao as Avaliacao & { notaTempo?: number }).nota_tempo ??
-						(avaliacao as Avaliacao & { notaTempo?: number }).notaTempo ??
-						(avaliacao as Avaliacao & { notaTempoAtendimento?: number }).notaTempoAtendimento ??
-						avaliacao.nota_tempo,
-					);
-
-					return {
-						cod_avaliacao: Number(
-							(avaliacao as Avaliacao & { codAvaliacao?: number }).cod_avaliacao ??
-							(avaliacao as Avaliacao & { codAvaliacao?: number }).codAvaliacao ??
-							avaliacao.cod_avaliacao,
-						),
-						cod_servico: Number(
-							(avaliacao as Avaliacao & { codServico?: number }).cod_servico ??
-							(avaliacao as Avaliacao & { codServico?: number }).codServico ??
-							avaliacao.cod_servico,
-						),
-						cod_morador: Number(
-							(avaliacao as Avaliacao & { codMorador?: number }).cod_morador ??
-							(avaliacao as Avaliacao & { codMorador?: number }).codMorador ??
-							avaliacao.cod_morador,
-						),
-						nota_servico: Number.isFinite(notaServico) ? notaServico : 0,
-						nota_tempo: Number.isFinite(notaTempo) ? notaTempo : 0,
-						opiniao:
-							(avaliacao as Avaliacao).opiniao ??
-							(avaliacao as { descricao?: string }).descricao ??
-							(avaliacao as { comentario?: string }).comentario ??
-							null,
-						servico_nome:
-							(avaliacao as Avaliacao).servico_nome ??
-							(avaliacao as { nome_servico?: string }).nome_servico ??
-							undefined,
-						morador_nome:
-							(avaliacao as Avaliacao).morador_nome ??
-							(avaliacao as { nome_morador?: string }).nome_morador ??
-							undefined,
-					};
-				});
+				const normalizedOcorrencias = ocorrenciasData.map((item) => normalizeOcorrenciaRecord(item));
+				const normalizedMoradores = moradoresData.map((item) => normalizeMoradorRecord(item));
+				const normalizedServicos = servicosData.map((item) => normalizeServicoRecord(item, normalizedOcorrencias));
+				const normalizedAvaliacoes = avaliacoesData.map((item) => normalizeAvaliacaoRecord(item));
 
 				setAvaliacoes(
 					buildAvaliacaoDisplay(
@@ -152,9 +178,11 @@ const AvaliacoesPage = () => {
 			} catch (error) {
 				if (!controller.signal.aborted) {
 					if (axios.isAxiosError(error)) {
-						setErrorMessage(error.response?.data?.message ?? "Não foi possível carregar as avaliações.");
+						setAlertType("error");
+						setAlertMessage(error.response?.data?.message ?? "Não foi possível carregar as avaliações.");
 					} else {
-						setErrorMessage("Erro inesperado ao carregar dados.");
+						setAlertType("error");
+						setAlertMessage("Erro inesperado ao carregar dados.");
 					}
 				}
 			} finally {
@@ -170,31 +198,34 @@ const AvaliacoesPage = () => {
 	const filteredAvaliacoes = useMemo(() => {
 		const term = searchTerm.trim().toLowerCase();
 		if (!term) {
-			return avaliacoes;
+			return avaliacoes.sort((a, b) => a.cod_avaliacao - b.cod_avaliacao);
 		}
-		return avaliacoes.filter((avaliacao) => avaliacao.servico_nome.toLowerCase().includes(term));
+		return avaliacoes.filter((avaliacao) => avaliacao.servico_nome.toLowerCase().includes(term))
+			.sort((a, b) => a.cod_avaliacao - b.cod_avaliacao);
 	}, [avaliacoes, searchTerm]);
 
 	const openOcorrenciaModal = (avaliacao: AvaliacaoDisplay) => {
 		if (!avaliacao.ocorrenciaDetalhe) {
-			setErrorMessage("Nenhuma ocorrência vinculada encontrada para este serviço.");
+			setAlertType("error");
+			setAlertMessage("Nenhuma ocorrência vinculada encontrada para este serviço.");
 			return;
 		}
-		setErrorMessage("");
+		setAlertMessage("");
 		setSelectedOcorrencia(avaliacao.ocorrenciaDetalhe);
 	};
 
 	const openServicoModal = (avaliacao: AvaliacaoDisplay) => {
 		if (!avaliacao.servicoDetalhe) {
-			setErrorMessage("Não foi possível encontrar detalhes do serviço relacionado.");
+			setAlertType("error");
+			setAlertMessage("Não foi possível encontrar detalhes do serviço relacionado.");
 			return;
 		}
-		setErrorMessage("");
+		setAlertMessage("");
 		setSelectedServico(avaliacao.servicoDetalhe);
 	};
 
 	const openDescricaoModal = (avaliacao: AvaliacaoDisplay) => {
-		setErrorMessage("");
+		setAlertMessage("");
 		setDescricaoSelecionada(avaliacao.opiniao ?? "");
 	};
 
@@ -203,6 +234,9 @@ const AvaliacoesPage = () => {
 	return (
 		<div className="min-h-screen bg-white text-neutral-900">
 			<div className="flex min-h-screen flex-col">
+				{alertMessage && (
+					<AlertPopup type={alertType} message={alertMessage} onClose={() => setAlertMessage("")} />
+				)}
 				<Navbar links={pageLinks} />
 				<main className="flex flex-1 justify-center px-6 py-16">
 					<div className="w-full max-w-6xl space-y-10">
@@ -215,7 +249,6 @@ const AvaliacoesPage = () => {
 						<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 							<AvaliacaoSearchBar value={searchTerm} onChange={setSearchTerm} />
 						</div>
-						{errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
 						<AvaliacaoTable
 							avaliacoes={filteredAvaliacoes}
 							isLoading={isLoading}

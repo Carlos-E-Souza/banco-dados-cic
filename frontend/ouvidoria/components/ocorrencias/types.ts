@@ -7,23 +7,25 @@ export type Ocorrencia = {
 	cod_oco: number;
 	cod_tipo: number;
 	tipo_nome: string;
+	cod_local?: number | null;
+	cod_servico?: number | null;
+	morador_cpf?: string | null;
 	estado: string;
-	municipio: string;
+	cidade: string;
 	bairro: string;
 	endereco: string;
 	data: string;
-	status: string;
-	descricao?: string | null;
+	tipo_status?: string | null;
+	descr?: string | null;
 };
 
 export type OcorrenciaFormState = {
 	tipoOcorrencia: string;
 	estado: string;
-	municipio: string;
+	cidade: string;
 	bairro: string;
 	endereco: string;
 	data: string;
-	status: string;
 	descricao: string;
 };
 

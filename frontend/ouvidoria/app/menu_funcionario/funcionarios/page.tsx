@@ -15,55 +15,7 @@ import {
 	OrgaoPublico,
 } from "../../../components/funcionarios/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
-
-const mockFuncionarios: Funcionario[] = [
-	{
-		cpf: "12345678900",
-		nome: "Maria Ferreira",
-		orgao_pub: 1,
-		orgao_nome: "Secretaria de Obras",
-		cargo: 1,
-		cargo_nome: "Engenheira",
-		data_nasc: "1988-03-15",
-		inicio_contrato: "2020-01-10",
-		fim_contrato: "2025-01-09",
-	},
-	{
-		cpf: "98765432100",
-		nome: "João Lima",
-		orgao_pub: 2,
-		orgao_nome: "Secretaria de Educação",
-		cargo: 2,
-		cargo_nome: "Coordenador",
-		data_nasc: "1990-07-22",
-		inicio_contrato: "2019-08-01",
-		fim_contrato: null,
-	},
-	{
-		cpf: "45678912300",
-		nome: "Ana Souza",
-		orgao_pub: 3,
-		orgao_nome: "Secretaria de Saúde",
-		cargo: 3,
-		cargo_nome: "Analista",
-		data_nasc: "1995-11-04",
-		inicio_contrato: "2022-05-12",
-		fim_contrato: "2024-05-11",
-	},
-];
-
-const mockCargos: Cargo[] = [
-	{ cod_cargo: 1, nome: "Engenheira" },
-	{ cod_cargo: 2, nome: "Coordenador" },
-	{ cod_cargo: 3, nome: "Analista" },
-];
-
-const mockOrgaos: OrgaoPublico[] = [
-	{ cod_orgao: 1, nome: "Secretaria de Obras", estado: "DF" },
-	{ cod_orgao: 2, nome: "Secretaria de Educação", estado: "DF" },
-	{ cod_orgao: 3, nome: "Secretaria de Saúde", estado: "DF" },
-];
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 const emptyForm: FuncionarioFormState = {
 	cpf: "",
@@ -73,18 +25,45 @@ const emptyForm: FuncionarioFormState = {
 	dataNasc: "",
 	inicioContrato: "",
 	fimContrato: "",
+	email: "",
+	senha: "",
+	foto: "",
 };
 
 const funcionarioLinks = [
 	{ href: "/menu_funcionario", label: "Menu" },
-	{ href: "/menu_funcionario/funcionarios", label: "Funcionários" },
 ];
+
+const buildImageSource = (raw: string | null | undefined): string | null => {
+	if (!raw) {
+		return null;
+	}
+
+	const trimmed = raw.trim();
+	if (!trimmed) {
+		return null;
+	}
+
+	if (trimmed.startsWith("data:")) {
+		return trimmed;
+	}
+
+	const lower = trimmed.toLowerCase();
+	let mime = "image/jpeg";
+	if (lower.startsWith("ivbor")) {
+		mime = "image/png";
+	} else if (lower.startsWith("r0lgod")) {
+		mime = "image/gif";
+	}
+
+	return `data:${mime};base64,${trimmed}`;
+};
 
 const FuncionariosPage = () => {
 	const { isFuncionario } = useUser();
-	const [funcionarios, setFuncionarios] = useState<Funcionario[]>(mockFuncionarios);
-	const [cargos, setCargos] = useState<Cargo[]>(mockCargos);
-	const [orgaos, setOrgaos] = useState<OrgaoPublico[]>(mockOrgaos);
+	const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
+	const [cargos, setCargos] = useState<Cargo[]>([]);
+	const [orgaos, setOrgaos] = useState<OrgaoPublico[]>([]);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
@@ -110,17 +89,18 @@ const FuncionariosPage = () => {
 					axios.get<OrgaoPublico[]>(`${API_BASE_URL}/orgaos-publicos`, { signal: controller.signal }),
 				]);
 
-				const funcionariosData = funcResponse.data?.length ? funcResponse.data : mockFuncionarios;
 				setFuncionarios(
-					funcionariosData.map((item) => ({
+					(funcResponse.data ?? []).map((item) => ({
 						...item,
 						data_nasc: item.data_nasc ?? "",
 						inicio_contrato: item.inicio_contrato ?? "",
 						fim_contrato: item.fim_contrato ?? null,
+						email: item.email ?? null,
+						foto: item.foto ?? null,
 					}))
 				);
-				setCargos(cargoResponse.data?.length ? cargoResponse.data : mockCargos);
-				setOrgaos(orgaoResponse.data?.length ? orgaoResponse.data : mockOrgaos);
+				setCargos(cargoResponse.data ?? []);
+				setOrgaos(orgaoResponse.data ?? []);
 			} catch (error) {
 				if (!controller.signal.aborted) {
 					if (axios.isAxiosError(error)) {
@@ -182,6 +162,9 @@ const FuncionariosPage = () => {
 			data_nasc: createFormState.dataNasc,
 			inicio_contrato: createFormState.inicioContrato,
 			fim_contrato: createFormState.fimContrato ? createFormState.fimContrato : null,
+			email: createFormState.email || null,
+			senha: createFormState.senha,
+			foto: createFormState.foto ? createFormState.foto : null,
 		};
 
 		const orgaoNome =
@@ -194,12 +177,14 @@ const FuncionariosPage = () => {
 			const responseData = response.data;
 
 			setFuncionarios((prev) => {
-				const newItem = responseData
+				const newItem: Funcionario = responseData
 					? {
 						...responseData,
 						orgao_nome: responseData.orgao_nome ?? orgaoNome,
 						cargo_nome: responseData.cargo_nome ?? cargoNome,
 						fim_contrato: responseData.fim_contrato ?? null,
+							foto: responseData.foto ?? (createFormState.foto ? createFormState.foto : null),
+							email: responseData.email ?? (createFormState.email || null),
 					}
 					: {
 						cpf: createFormState.cpf,
@@ -211,6 +196,8 @@ const FuncionariosPage = () => {
 						data_nasc: createFormState.dataNasc,
 						inicio_contrato: createFormState.inicioContrato,
 						fim_contrato: createFormState.fimContrato || null,
+							foto: createFormState.foto ? createFormState.foto : null,
+							email: createFormState.email || null,
 					};
 
 				return [...prev, newItem];
@@ -239,6 +226,9 @@ const FuncionariosPage = () => {
 			dataNasc: funcionario.data_nasc?.slice(0, 10) ?? "",
 			inicioContrato: funcionario.inicio_contrato?.slice(0, 10) ?? "",
 			fimContrato: funcionario.fim_contrato?.slice(0, 10) ?? "",
+			email: funcionario.email ?? "",
+			senha: "",
+			foto: funcionario.foto ?? "",
 		});
 		setErrorMessage("");
 		setSuccessMessage("");
@@ -260,31 +250,51 @@ const FuncionariosPage = () => {
 		setSuccessMessage("");
 
 		try {
-			await axios.put(`${API_BASE_URL}/funcionarios/${editingFuncionario.cpf}`, {
+			const payload: Record<string, unknown> = {
 				nome: formState.nome,
 				orgao_pub: Number(formState.orgaoPub),
 				cargo: Number(formState.cargo),
 				data_nasc: formState.dataNasc,
 				inicio_contrato: formState.inicioContrato,
 				fim_contrato: formState.fimContrato ? formState.fimContrato : null,
-			});
+				email: formState.email || null,
+				foto: formState.foto ? formState.foto : null,
+			};
 
-			const orgaoNome = orgaos.find((item) => String(item.cod_orgao) === formState.orgaoPub)?.nome ?? editingFuncionario.orgao_nome;
-			const cargoNome = cargos.find((item) => String(item.cod_cargo) === formState.cargo)?.nome ?? editingFuncionario.cargo_nome;
+			if (formState.senha) {
+				payload.senha = formState.senha;
+			}
+
+			const response = await axios.put<Funcionario>(`${API_BASE_URL}/funcionarios/${editingFuncionario.cpf}`, payload);
+			const responseData = response.data;
+
+			const orgaoNome =
+				responseData?.orgao_nome ??
+				orgaos.find((item) => String(item.cod_orgao) === formState.orgaoPub)?.nome ??
+				editingFuncionario.orgao_nome;
+			const cargoNome =
+				responseData?.cargo_nome ??
+				cargos.find((item) => String(item.cod_cargo) === formState.cargo)?.nome ??
+				editingFuncionario.cargo_nome;
+			const updatedFoto = responseData?.foto ?? (formState.foto ? formState.foto : null);
+			const updatedEmail = responseData?.email ?? (formState.email || null);
+			const updatedFimContrato = responseData?.fim_contrato ?? (formState.fimContrato || null);
 
 			setFuncionarios((prev) =>
 				prev.map((item) =>
 					item.cpf === editingFuncionario.cpf
 						? {
 							...item,
-							nome: formState.nome,
-							orgao_pub: Number(formState.orgaoPub),
+							nome: responseData?.nome ?? formState.nome,
+							orgao_pub: responseData?.orgao_pub ?? Number(formState.orgaoPub),
 							orgao_nome: orgaoNome,
-							cargo: Number(formState.cargo),
+							cargo: responseData?.cargo ?? Number(formState.cargo),
 							cargo_nome: cargoNome,
-							data_nasc: formState.dataNasc,
-							inicio_contrato: formState.inicioContrato,
-							fim_contrato: formState.fimContrato || null,
+							data_nasc: responseData?.data_nasc ?? formState.dataNasc,
+							inicio_contrato: responseData?.inicio_contrato ?? formState.inicioContrato,
+							fim_contrato: updatedFimContrato,
+							email: updatedEmail,
+							foto: updatedFoto,
 						}
 						: item
 				)
@@ -300,6 +310,7 @@ const FuncionariosPage = () => {
 			}
 		} finally {
 			setIsSaving(false);
+			setFormState((prev) => ({ ...prev, senha: "" }));
 		}
 	};
 
@@ -389,6 +400,7 @@ const FuncionariosPage = () => {
 							<table className="min-w-full divide-y divide-neutral-200 text-sm">
 								<thead className="bg-neutral-50 text-xs font-semibold uppercase tracking-wide text-neutral-500">
 									<tr>
+										<th className="px-6 py-4 text-left">Foto</th>
 										<th className="px-6 py-4 text-left">Nome</th>
 										<th className="px-6 py-4 text-left">Órgão público</th>
 										<th className="px-6 py-4 text-left">Cargo</th>
@@ -398,19 +410,39 @@ const FuncionariosPage = () => {
 								<tbody className="divide-y divide-neutral-200 bg-white">
 									{isLoading ? (
 										<tr>
-											<td colSpan={4} className="px-6 py-10 text-center text-neutral-500">
+											<td colSpan={5} className="px-6 py-10 text-center text-neutral-500">
 												Carregando funcionários...
 											</td>
 										</tr>
 									) : filteredFuncionarios.length === 0 ? (
 										<tr>
-											<td colSpan={4} className="px-6 py-10 text-center text-neutral-500">
+											<td colSpan={5} className="px-6 py-10 text-center text-neutral-500">
 												Nenhum funcionário encontrado.
 											</td>
 										</tr>
 									) : (
-										filteredFuncionarios.map((funcionario) => (
-											<tr key={funcionario.cpf} className="transition-colors hover:bg-neutral-50">
+										filteredFuncionarios.map((funcionario) => {
+											const fotoSrc = buildImageSource(funcionario.foto);
+											return (
+												<tr key={funcionario.cpf} className="transition-colors hover:bg-neutral-50">
+												<td className="px-6 py-4">
+													<div className="flex h-[50px] w-[50px] items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-100">
+														{fotoSrc ? (
+															<img
+																src={fotoSrc}
+																alt={`Foto de ${funcionario.nome}`}
+																className="h-full w-full object-cover"
+																width={50}
+																height={50}
+																style={{ maxWidth: "50px", maxHeight: "50px" }}
+															/>
+														) : (
+															<span className="text-xs font-semibold text-neutral-500">
+																{funcionario.nome?.trim()?.charAt(0)?.toUpperCase() ?? "?"}
+															</span>
+														)}
+													</div>
+												</td>
 												<td className="px-6 py-4 text-neutral-800">{funcionario.nome}</td>
 												<td className="px-6 py-4 text-neutral-600">{funcionario.orgao_nome}</td>
 												<td className="px-6 py-4 text-neutral-600">{funcionario.cargo_nome}</td>
@@ -456,7 +488,8 @@ const FuncionariosPage = () => {
 													</div>
 												</td>
 											</tr>
-										))
+										);
+										})
 									)}
 								</tbody>
 							</table>

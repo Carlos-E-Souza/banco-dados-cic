@@ -1,4 +1,5 @@
 import { FormEvent, ChangeEvent } from "react";
+import DateInput from "../DateInput";
 import { Ocorrencia, OcorrenciaFormState, TipoOcorrencia } from "./types";
 
 type EditOcorrenciaModalProps = {
@@ -74,22 +75,6 @@ const EditOcorrenciaModal = ({
 							</select>
 						</div>
 						<div className="space-y-2">
-							<label htmlFor="edit-status" className="text-sm font-semibold text-neutral-800">
-								Status
-							</label>
-							<input
-								id="edit-status"
-								type="text"
-								value={formState.status}
-								onChange={createChangeHandler("status")}
-								placeholder="Em análise"
-								className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
-								required
-							/>
-						</div>
-					</div>
-					<div className="grid gap-4 md:grid-cols-2">
-						<div className="space-y-2">
 							<label htmlFor="edit-estado" className="text-sm font-semibold text-neutral-800">
 								Estado
 							</label>
@@ -102,21 +87,21 @@ const EditOcorrenciaModal = ({
 								required
 							/>
 						</div>
+					</div>
+					<div className="grid gap-4 md:grid-cols-2">
 						<div className="space-y-2">
-							<label htmlFor="edit-municipio" className="text-sm font-semibold text-neutral-800">
-								Município
+							<label htmlFor="edit-cidade" className="text-sm font-semibold text-neutral-800">
+								Cidade
 							</label>
 							<input
-								id="edit-municipio"
+								id="edit-cidade"
 								type="text"
-								value={formState.municipio}
-								onChange={createChangeHandler("municipio")}
+								value={formState.cidade}
+								onChange={createChangeHandler("cidade")}
 								className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
 								required
 							/>
 						</div>
-					</div>
-					<div className="grid gap-4 md:grid-cols-2">
 						<div className="space-y-2">
 							<label htmlFor="edit-bairro" className="text-sm font-semibold text-neutral-800">
 								Bairro
@@ -130,6 +115,8 @@ const EditOcorrenciaModal = ({
 								required
 							/>
 						</div>
+					</div>
+					<div className="grid gap-4 md:grid-cols-2">
 						<div className="space-y-2">
 							<label htmlFor="edit-endereco" className="text-sm font-semibold text-neutral-800">
 								Endereço
@@ -143,21 +130,19 @@ const EditOcorrenciaModal = ({
 								required
 							/>
 						</div>
-					</div>
-					<div className="grid gap-4 md:grid-cols-2">
 						<div className="space-y-2">
 							<label htmlFor="edit-data" className="text-sm font-semibold text-neutral-800">
 								Data
 							</label>
-							<input
+							<DateInput
 								id="edit-data"
-								type="date"
 								value={formState.data}
-								onChange={createChangeHandler("data")}
-								className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
+								onChange={(value) => onChange("data", value)}
 								required
 							/>
 						</div>
+					</div>
+					<div className="grid gap-4 md:grid-cols-2">
 						<div className="space-y-2">
 							<label htmlFor="edit-descricao" className="text-sm font-semibold text-neutral-800">
 								Descrição

@@ -2,43 +2,69 @@
 
 import axios from "axios";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useUser } from "./UserContext";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+type LoginResponse = {
+  tipo: "funcionario" | "morador";
+  isFuncionario: boolean;
+  cpf: string;
+  nome: string;
+  email: string;
+  orgao_pub?: number;
+  cargo?: number;
+};
+
 const LoginForm = () => {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordVisibility, setPasswordVisibility] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const { setEmail: setLoggedEmail, setIsFuncionario } = useUser();
+  const { setEmail: setLoggedEmail, setCpf, setIsFuncionario } = useUser();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage("");
     setIsLoading(true);
 
-    
     try {
-      // const response = await axios.post(
-      //   "http://localhost:8000/auth/login",
-      //   { email, password },
-      //   { timeout: 10000 }
-      // );
-      // TODO: substituir console.log por lógica de autenticação (armazenar token, redirecionar, etc.)
       const normalizedEmail = email.trim();
-      // const isFuncionario = Boolean(response.data?.isFuncionario);
-      const isFuncionario = false;
-      console.log({ email: normalizedEmail, password });
-      setLoggedEmail(normalizedEmail);
-      setIsFuncionario(isFuncionario);
+      const response = await axios.post<LoginResponse>(
+        `${API_BASE_URL}/auth/login`,
+        { email: normalizedEmail, senha: password },
+        { timeout: 10000 },
+      );
+      const data = response.data;
+
+      setLoggedEmail(data.email);
+      setCpf(data.cpf ?? null);
+      setIsFuncionario(Boolean(data.isFuncionario));
+
+      if (data.isFuncionario) {
+        router.push("/menu_funcionario");
+      } else {
+        router.push("/menu_morador");
+      }
     } catch (error) {
-      // if (axios.isAxiosError(error)) {
-      //   setErrorMessage(error.response?.data?.message ?? "Não foi possível entrar. Tente novamente.");
-      // } else {
-      //   setErrorMessage("Erro inesperado. Tente novamente em instantes.");
-      // }
-      setErrorMessage("Erro de autenticação simulada.");
+      if (axios.isAxiosError(error)) {
+        const message =
+          typeof error.response?.data === "object" && error.response?.data !== null
+            ? (error.response.data as { detail?: string }).detail
+            : undefined;
+        if (error.response?.status === 401) {
+          setErrorMessage(message ?? "Email ou senha inválidos.");
+        } else {
+          setErrorMessage(message ?? "Não foi possível entrar. Tente novamente.");
+        }
+      } else {
+        setErrorMessage("Erro inesperado. Tente novamente em instantes.");
+      }
       setLoggedEmail(null);
+      setCpf(null);
       setIsFuncionario(false);
     } finally {
       setIsLoading(false);

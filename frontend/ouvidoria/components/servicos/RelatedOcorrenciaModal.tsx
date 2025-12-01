@@ -6,10 +6,27 @@ type RelatedOcorrenciaModalProps = {
 	onClose: () => void;
 };
 
+
+const formatDate = (rawDate?: string | null) => {
+	if (!rawDate) {
+		return "";
+	}
+
+	const [year, month, day] = rawDate.split("-").map(Number);
+	if (!year || !month || !day) {
+		return rawDate;
+	}
+
+	return new Intl.DateTimeFormat("pt-BR").format(new Date(year, month - 1, day));
+};
+
+
 const RelatedOcorrenciaModal = ({ ocorrencia, onClose }: RelatedOcorrenciaModalProps) => {
 	if (!ocorrencia) {
 		return null;
 	}
+
+	const formattedDate = formatDate(ocorrencia.data);
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
@@ -30,7 +47,7 @@ const RelatedOcorrenciaModal = ({ ocorrencia, onClose }: RelatedOcorrenciaModalP
 							<FiTag className="h-4 w-4" />
 							<span>#{ocorrencia.cod_oco}</span>
 						</div>
-						<span className="rounded-full bg-lime-100 px-3 py-1 text-xs font-semibold text-lime-700">{ocorrencia.status}</span>
+						<span className="rounded-full bg-lime-100 px-3 py-1 text-xs font-semibold text-lime-700">{ocorrencia.tipo_status}</span>
 					</div>
 					<div className="space-y-1">
 						<p className="text-sm font-semibold text-neutral-800">Tipo</p>
@@ -42,16 +59,16 @@ const RelatedOcorrenciaModal = ({ ocorrencia, onClose }: RelatedOcorrenciaModalP
 							Localização
 						</p>
 						<p>
-							{[ocorrencia.endereco, ocorrencia.bairro, ocorrencia.municipio, ocorrencia.estado]
+							{[ocorrencia.endereco, ocorrencia.bairro, ocorrencia.cidade, ocorrencia.estado]
 								.filter(Boolean)
 								.join(" • ") || "Endereço não informado"}
 						</p>
-						<p>{ocorrencia.data ? new Date(ocorrencia.data).toLocaleDateString() : "Data não informada"}</p>
+						<p>{ocorrencia.data ? formattedDate : "Data não informada"}</p>
 					</div>
-					{ocorrencia.descricao && (
+					{ocorrencia.descr && (
 						<div className="space-y-1">
 							<p className="text-sm font-semibold text-neutral-800">Descrição</p>
-							<p className="text-sm leading-relaxed text-neutral-600">{ocorrencia.descricao}</p>
+							<p className="text-sm leading-relaxed text-neutral-600">{ocorrencia.descr}</p>
 						</div>
 					)}
 				</div>

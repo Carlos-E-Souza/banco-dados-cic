@@ -5,18 +5,23 @@ type EvaluateOcorrenciaModalProps = {
 	ocorrencia: Ocorrencia | null;
 	formState: AvaliacaoFormState;
 	isSaving: boolean;
+	isLoading: boolean;
+	isEditing: boolean;
 	onClose: () => void;
 	onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 	onChange: (field: keyof AvaliacaoFormState, value: string) => void;
 };
 
-const EvaluateOcorrenciaModal = ({ ocorrencia, formState, isSaving, onClose, onSubmit, onChange }: EvaluateOcorrenciaModalProps) => {
+const EvaluateOcorrenciaModal = ({ ocorrencia, formState, isSaving, isLoading, isEditing, onClose, onSubmit, onChange }: EvaluateOcorrenciaModalProps) => {
 	if (!ocorrencia) {
 		return null;
 	}
 
 	const handleChange = (field: keyof AvaliacaoFormState) =>
 		(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onChange(field, event.target.value);
+
+	const inputsDisabled = isSaving || isLoading;
+	const submitLabel = isLoading ? "Carregando avaliação..." : isSaving ? "Enviando avaliação..." : isEditing ? "Atualizar avaliação" : "Enviar avaliação";
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
@@ -41,6 +46,11 @@ const EvaluateOcorrenciaModal = ({ ocorrencia, formState, isSaving, onClose, onS
 					</button>
 				</div>
 				<form className="space-y-5" onSubmit={onSubmit}>
+					{isLoading && (
+						<div className="rounded-full border border-neutral-200 bg-neutral-100 px-4 py-2 text-center text-xs font-semibold text-neutral-600">
+							Carregando dados da avaliação...
+						</div>
+					)}
 					<div className="grid gap-4 md:grid-cols-2">
 						<div className="space-y-2">
 							<label htmlFor="avaliacao-nota-serv" className="text-sm font-semibold text-neutral-800">
@@ -55,6 +65,7 @@ const EvaluateOcorrenciaModal = ({ ocorrencia, formState, isSaving, onClose, onS
 								onChange={handleChange("notaServ")}
 								className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
 								required
+								disabled={inputsDisabled}
 							/>
 						</div>
 						<div className="space-y-2">
@@ -70,6 +81,7 @@ const EvaluateOcorrenciaModal = ({ ocorrencia, formState, isSaving, onClose, onS
 								onChange={handleChange("notaTempo")}
 								className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
 								required
+								disabled={inputsDisabled}
 							/>
 						</div>
 					</div>
@@ -83,18 +95,19 @@ const EvaluateOcorrenciaModal = ({ ocorrencia, formState, isSaving, onClose, onS
 							onChange={handleChange("opiniao")}
 							className="h-32 w-full rounded-3xl border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
 							placeholder="Conte como foi o atendimento."
+							disabled={inputsDisabled}
 						/>
 					</div>
 					<button
 						type="submit"
-						disabled={isSaving}
+						disabled={inputsDisabled}
 						className={`w-full rounded-full border px-6 py-3 text-sm font-semibold transition-colors ${
-							isSaving
+							inputsDisabled
 								? "border-neutral-300 bg-neutral-200 text-neutral-500"
 								: "border-lime-500 bg-neutral-900 text-white hover:bg-lime-500 hover:text-neutral-900"
 						}`}
 					>
-						{isSaving ? "Enviando avaliação..." : "Enviar avaliação"}
+						{submitLabel}
 					</button>
 				</form>
 			</div>

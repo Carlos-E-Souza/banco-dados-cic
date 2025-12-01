@@ -8,37 +8,11 @@ import { useUser } from "../../../components/UserContext";
 import CreateOrgaoPublicoModal from "../../../components/orgaosPublicos/CreateOrgaoPublicoModal";
 import DeleteOrgaoPublicoModal from "../../../components/orgaosPublicos/DeleteOrgaoPublicoModal";
 import EditOrgaoPublicoModal from "../../../components/orgaosPublicos/EditOrgaoPublicoModal";
+import AlertPopup from "../../../components/AlertPopup";
 import { OrgaoPublico } from "../../../components/funcionarios/types";
 import { OrgaoPublicoFormState } from "../../../components/orgaosPublicos/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
-
-const mockOrgaos: OrgaoPublico[] = [
-	{
-		cod_orgao: 1,
-		nome: "Secretaria de Obras",
-		estado: "DF",
-		descr: "Responsável por obras públicas de infraestrutura.",
-		data_ini: "2015-01-01",
-		data_fim: null,
-	},
-	{
-		cod_orgao: 2,
-		nome: "Secretaria de Educação",
-		estado: "DF",
-		descr: "Coordena políticas públicas de educação básica e superior.",
-		data_ini: "2012-03-10",
-		data_fim: null,
-	},
-	{
-		cod_orgao: 3,
-		nome: "Secretaria de Saúde",
-		estado: "DF",
-		descr: "Administra os serviços de saúde na região.",
-		data_ini: "2010-07-15",
-		data_fim: "2024-12-31",
-	},
-];
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 const emptyForm: OrgaoPublicoFormState = {
 	nome: "",
@@ -50,13 +24,11 @@ const emptyForm: OrgaoPublicoFormState = {
 
 const funcionarioLinks = [
 	{ href: "/menu_funcionario", label: "Menu" },
-	{ href: "/menu_funcionario/funcionarios", label: "Funcionários" },
-	{ href: "/menu_funcionario/orgaos_publicos", label: "Órgãos Públicos" },
 ];
 
 const OrgaosPublicosPage = () => {
 	const { isFuncionario } = useUser();
-	const [orgaos, setOrgaos] = useState<OrgaoPublico[]>(mockOrgaos);
+	const [orgaos, setOrgaos] = useState<OrgaoPublico[]>([]);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
@@ -79,9 +51,8 @@ const OrgaosPublicosPage = () => {
 				const response = await axios.get<OrgaoPublico[]>(`${API_BASE_URL}/orgaos-publicos`, {
 					signal: controller.signal,
 				});
-				const data = response.data?.length ? response.data : mockOrgaos;
 				setOrgaos(
-					data.map((item) => ({
+					(response.data ?? []).map((item) => ({
 						...item,
 						data_ini: item.data_ini ?? "",
 						data_fim: item.data_fim ?? null,
@@ -158,37 +129,33 @@ const OrgaosPublicosPage = () => {
 		setErrorMessage("");
 		setSuccessMessage("");
 
+		const nome = createFormState.nome.trim();
+		const estado = createFormState.estado.trim();
+		const descricao = createFormState.descricao.trim();
+		const dataInicio = createFormState.dataInicio;
+		const dataFim = createFormState.dataFim ? createFormState.dataFim : null;
+
 		const payload = {
-			nome: createFormState.nome,
-			estado: createFormState.estado,
-			descr: createFormState.descricao,
-			data_ini: createFormState.dataInicio,
-			data_fim: createFormState.dataFim ? createFormState.dataFim : null,
+			nome,
+			estado,
+			descr: descricao || null,
+			data_ini: dataInicio,
+			data_fim: dataFim,
 		};
 
 		try {
 			const response = await axios.post<OrgaoPublico>(`${API_BASE_URL}/orgaos-publicos`, payload);
 			const responseData = response.data;
 
-			setOrgaos((prev) => {
-				const fallbackId = prev.length ? Math.max(...prev.map((item) => item.cod_orgao)) + 1 : 1;
-				const newItem = responseData
-					? {
-						...responseData,
-						data_ini: responseData.data_ini ?? "",
-						data_fim: responseData.data_fim ?? null,
-					}
-					: {
-						cod_orgao: fallbackId,
-						nome: createFormState.nome,
-						estado: createFormState.estado,
-						descr: createFormState.descricao,
-						data_ini: createFormState.dataInicio,
-						data_fim: createFormState.dataFim || null,
-					};
-
-				return [...prev, newItem];
-			});
+			setOrgaos((prev) => [
+				...prev,
+				{
+					...responseData,
+					data_ini: responseData.data_ini ?? dataInicio,
+					data_fim: responseData.data_fim ?? dataFim,
+					descr: responseData.descr ?? (descricao || null),
+				},
+			]);
 
 			setSuccessMessage("Órgão público adicionado com sucesso.");
 			closeCreateModal();
@@ -214,25 +181,35 @@ const OrgaosPublicosPage = () => {
 		setSuccessMessage("");
 
 		try {
-			await axios.put(`${API_BASE_URL}/orgaos-publicos/${editingOrgao.cod_orgao}`, {
-				nome: formState.nome,
-				estado: formState.estado,
-				descr: formState.descricao,
-				data_ini: formState.dataInicio,
-				data_fim: formState.dataFim ? formState.dataFim : null,
-			});
+			const nome = formState.nome.trim();
+			const estado = formState.estado.trim();
+			const descricao = formState.descricao.trim();
+			const dataInicio = formState.dataInicio;
+			const dataFim = formState.dataFim ? formState.dataFim : null;
+
+			const response = await axios.put<OrgaoPublico>(
+				`${API_BASE_URL}/orgaos-publicos/${editingOrgao.cod_orgao}`,
+				{
+					nome,
+					estado,
+					descr: descricao || null,
+					data_ini: dataInicio,
+					data_fim: dataFim,
+				}
+			);
+			const responseData = response.data;
 
 			setOrgaos((prev) =>
 				prev.map((item) =>
 					item.cod_orgao === editingOrgao.cod_orgao
 						? {
 							...item,
-							nome: formState.nome,
-							estado: formState.estado,
-							descr: formState.descricao,
-							data_ini: formState.dataInicio,
-							data_fim: formState.dataFim || null,
-						}
+							nome: responseData?.nome ?? nome,
+							estado: responseData?.estado ?? estado,
+							descr: responseData?.descr ?? (descricao || null),
+							data_ini: responseData?.data_ini ?? dataInicio,
+							data_fim: responseData?.data_fim ?? dataFim,
+					  }
 						: item
 				)
 			);
@@ -285,6 +262,12 @@ const OrgaosPublicosPage = () => {
 	return (
 		<div className="min-h-screen bg-white text-neutral-900">
 			<div className="flex min-h-screen flex-col">
+				{errorMessage && (
+					<AlertPopup type="error" message={errorMessage} onClose={() => setErrorMessage("")} />
+				)}
+				{successMessage && (
+					<AlertPopup type="success" message={successMessage} onClose={() => setSuccessMessage("")} />
+				)}
 				<Navbar links={pageLinks} />
 				<main className="flex flex-1 justify-center px-6 py-16">
 					<div className="w-full max-w-6xl space-y-10">
@@ -329,8 +312,6 @@ const OrgaosPublicosPage = () => {
 								<span>Adicionar órgão</span>
 							</button>
 						</div>
-						{errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
-						{successMessage && <p className="text-sm text-lime-600">{successMessage}</p>}
 						<div className="overflow-hidden rounded-3xl border border-neutral-200 shadow-[0_20px_60px_rgba(17,24,39,0.08)]">
 							<table className="min-w-full divide-y divide-neutral-200 text-sm">
 								<thead className="bg-neutral-50 text-xs font-semibold uppercase tracking-wide text-neutral-500">

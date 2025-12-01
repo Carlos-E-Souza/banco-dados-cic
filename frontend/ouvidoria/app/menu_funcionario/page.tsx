@@ -3,18 +3,19 @@ import MenuCard from "../../components/MenuCard";
 import Navbar from "../../components/Navbar";
 
 const AdminLinks = [
-	{ href: "/menu_funcionario/funcionarios", label: "Funcionarios", description: "Gerencie cadastro, permissões e equipe responsável pelo atendimento." },
-	{ href: "/menu_funcionario/orgaos_publicos", label: "Orgãos Publicos", description: "Atualize dados de órgãos, atribua responsáveis e mantenha informações institucionais." },
-	{ href: "/ocorrencias", label: "Ocorrências", description: "Acompanhe cada manifestação, atribua responsáveis e resolva pendências rapidamente." },
-	{ href: "/menu_funcionario/servicos", label: "Serviços", description: "Organize os serviços oferecidos, atualize descrições e disponibilize novos canais." },
-	{ href: "/menu_funcionario/avaliacoes", label: "Avaliações", description: "Avalie feedbacks, monitore indicadores de satisfação e responda aos cidadãos." },
+	{ href: "/menu_funcionario/funcionarios", label: "Funcionarios", description: "Gerencie os funcionarios." },
+	{ href: "/menu_funcionario/cargos", label: "Cargos", description: "Defina, atualize e delete cargos." },
+	{ href: "/menu_funcionario/orgaos_publicos", label: "Orgãos Publicos", description: "Atualize dados de órgãos e mantenha informações institucionais." },
+	{ href: "/ocorrencias", label: "Ocorrências", description: "Acompanhe cada manifestação e resolva pendências rapidamente." },
+	{ href: "/menu_funcionario/servicos", label: "Serviços", description: "Organize os serviços oferecidos." },
+	{ href: "/menu_funcionario/avaliacoes", label: "Avaliações", description: "Monitore indicadores de satisfação dos cidadãos." },
 ];
 
 const MenuFuncionarioPage = () => {
 	return (
 		<div className="min-h-screen bg-white text-neutral-900">
 			<div className="flex min-h-screen flex-col">
-				<Navbar links={AdminLinks.map(({ href, label }) => ({ href, label }))} />
+				<Navbar links={AdminLinks.map(({ href, label }) => ({ href, label }))} showLogout/>
 				<main className="flex flex-1 justify-center px-6 py-16">
 					<div className="w-full max-w-6xl space-y-12">
 						<div className="space-y-4 text-center md:text-left">

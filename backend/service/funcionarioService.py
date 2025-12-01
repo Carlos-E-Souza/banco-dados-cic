@@ -11,6 +11,26 @@ logger = logging.getLogger(__name__)
 
 _UNSET = object()
 
+_FUNCIONARIO_BASE_QUERY = (
+	"SELECT \n"
+	"\tf.cpf,\n"
+	"\tf.nome,\n"
+	"\tf.orgao_pub,\n"
+	"\torg.nome AS orgao_nome,\n"
+	"\tf.cargo,\n"
+	"\tcg.nome AS cargo_nome,\n"
+	"\tf.data_nasc,\n"
+	"\tf.inicio_contrato,\n"
+	"\tf.fim_contrato,\n"
+	"\tft.imagem AS foto,\n"
+	"\tem.email\n"
+	"FROM FUNCIONARIO AS f\n"
+	"LEFT JOIN ORGAO_PUBLICO AS org ON org.cod_orgao = f.orgao_pub\n"
+	"LEFT JOIN CARGO AS cg ON cg.cod_cargo = f.cargo\n"
+	"LEFT JOIN FOTO AS ft ON ft.cpf_func = f.cpf\n"
+	"LEFT JOIN EMAIL AS em ON em.cpf_func = f.cpf"
+)
+
 
 class FuncionarioService:
 	
@@ -19,47 +39,60 @@ class FuncionarioService:
 
 
 	def list_funcionarios(self) -> Sequence[dict[str, Any]]:
-		sql = (
-			"SELECT cpf, orgao_pub, cargo, data_nasc, "
-			"inicio_contrato, fim_contrato "
-			"FROM FUNCIONARIO"
-		)
+		sql = f"{_FUNCIONARIO_BASE_QUERY}\nORDER BY f.nome"
 		return self._db_manager.execute_raw_query(sql)
 
 
 	def get_funcionario_by_cpf(self, cpf: str) -> Optional[dict[str, Any]]:
-		sql = (
-			"SELECT f.cpf, f.orgao_pub, f.cargo, f.data_nasc, "
-			"f.inicio_contrato, f.fim_contrato, ft.imagem AS foto, em.email "
-			"FROM FUNCIONARIO AS f "
-			"LEFT JOIN FOTO AS ft ON ft.cpf_func = f.cpf "
-			"LEFT JOIN EMAIL AS em ON em.cpf_func = f.cpf "
-			"WHERE f.cpf = :cpf"
-		)
+		sql = f"{_FUNCIONARIO_BASE_QUERY}\nWHERE f.cpf = :cpf"
 		result = self._db_manager.execute_raw_query(sql, {"cpf": cpf})
 		return result[0] if result else None
 
 
 	def get_funcionario_by_email(self, email: str) -> Optional[dict[str, Any]]:
+		sql = f"{_FUNCIONARIO_BASE_QUERY}\nWHERE em.email = :email"
+		result = self._db_manager.execute_raw_query(sql, {"email": email})
+		return result[0] if result else None
+
+
+	def authenticate(self, email: str, senha: str) -> Optional[dict[str, Any]]:
 		sql = (
-			"SELECT f.cpf, f.orgao_pub, f.cargo, f.data_nasc, "
-			"f.inicio_contrato, f.fim_contrato, ft.imagem AS foto, em.email "
-			"FROM EMAIL AS em "
-			"INNER JOIN FUNCIONARIO AS f ON f.cpf = em.cpf_func "
-			"LEFT JOIN FOTO AS ft ON ft.cpf_func = f.cpf "
+			"SELECT "
+			"\tf.cpf, "
+			"\tf.nome, "
+			"\tf.senha, "
+			"\tf.orgao_pub, "
+			"\tf.cargo "
+			"FROM FUNCIONARIO AS f "
+			"JOIN EMAIL AS em ON em.cpf_func = f.cpf "
 			"WHERE em.email = :email"
 		)
 		result = self._db_manager.execute_raw_query(sql, {"email": email})
-		return result[0] if result else None
+		if not result:
+			return None
+
+		record = result[0]
+		if record.get("senha") != senha:
+			return None
+
+		return {
+			"cpf": record["cpf"],
+			"nome": record["nome"],
+			"email": email,
+			"orgao_pub": record["orgao_pub"],
+			"cargo": record["cargo"],
+		}
 
 
 	def create_funcionario(
 		self,
 		cpf: str,
+		nome: str,
 		orgao_pub: int,
 		cargo: int,
 		data_nasc: str,
 		inicio_contrato: str,
+		senha: str,
 		foto: Optional[bytes],
 		email: Optional[str],
 		fim_contrato: Optional[str] = None,
@@ -68,11 +101,13 @@ class FuncionarioService:
 		return self._create_funcionario_record(
 			payload={
 				"cpf": cpf,
+				"nome": nome,
 				"orgao_pub": orgao_pub,
 				"cargo": cargo,
 				"data_nasc": data_nasc,
 				"inicio_contrato": inicio_contrato,
 				"fim_contrato": fim_contrato,
+				"senha": senha,
 			},
 			foto=foto,
 			email=email,
@@ -82,16 +117,20 @@ class FuncionarioService:
 	def update_funcionario(
 		self,
 		cpf: str,
+		nome: Any = _UNSET,
 		orgao_pub: Any = _UNSET,
 		cargo: Any = _UNSET,
 		data_nasc: Any = _UNSET,
 		inicio_contrato: Any = _UNSET,
 		fim_contrato: Any = _UNSET,
+		senha: Any = _UNSET,
 		email: Any = _UNSET,
 		foto: Any = _UNSET,
 	) -> Optional[dict[str, Any]]:
 
 		fields_to_update: Dict[str, Any] = {}
+		if nome is not _UNSET:
+			fields_to_update["nome"] = nome
 		if orgao_pub is not _UNSET:
 			fields_to_update["orgao_pub"] = orgao_pub
 		if cargo is not _UNSET:
@@ -102,6 +141,8 @@ class FuncionarioService:
 			fields_to_update["inicio_contrato"] = inicio_contrato
 		if fim_contrato is not _UNSET:
 			fields_to_update["fim_contrato"] = fim_contrato
+		if senha is not _UNSET:
+			fields_to_update["senha"] = senha
 
 		try:
 			with self._db_manager.engine.begin() as connection:
@@ -136,8 +177,8 @@ class FuncionarioService:
 		email: Optional[str],
 	) -> dict[str, Any]:
 		insert_sql = (
-			"INSERT INTO FUNCIONARIO (orgao_pub, cargo, cpf, data_nasc, inicio_contrato, fim_contrato) "
-			"VALUES (:orgao_pub, :cargo, :cpf, :data_nasc, :inicio_contrato, :fim_contrato)"
+			"INSERT INTO FUNCIONARIO (cpf, nome, orgao_pub, cargo, data_nasc, inicio_contrato, fim_contrato, senha) "
+			"VALUES (:cpf, :nome, :orgao_pub, :cargo, :data_nasc, :inicio_contrato, :fim_contrato, :senha)"
 		)
 
 		try:
@@ -148,7 +189,7 @@ class FuncionarioService:
 				if email:
 					connection.execute(
 						text(
-							"INSERT INTO EMAIL (cpf, email) VALUES (:cpf, :email)"
+							"INSERT INTO EMAIL (cpf_func, email) VALUES (:cpf, :email)"
 						),
 						{"cpf": cpf, "email": email},
 					)
@@ -156,7 +197,7 @@ class FuncionarioService:
 				if foto is not None:
 					connection.execute(
 						text(
-							"INSERT INTO FOTO (cpf, imagem) VALUES (:cpf, :foto)"
+							"INSERT INTO FOTO (cpf_func, imagem) VALUES (:cpf, :foto)"
 						),
 						{"cpf": cpf, "foto": foto},
 					)
@@ -175,13 +216,13 @@ class FuncionarioService:
 			return
 
 		connection.execute(
-			text("DELETE FROM EMAIL WHERE cpf = :cpf"),
+			text("DELETE FROM EMAIL WHERE cpf_func = :cpf"),
 			{"cpf": cpf},
 		)
 
 		if email:
 			connection.execute(
-				text("INSERT INTO EMAIL (cpf, email) VALUES (:cpf, :email)"),
+				text("INSERT INTO EMAIL (cpf_func, email) VALUES (:cpf, :email)"),
 				{"cpf": cpf, "email": email},
 			)
 
@@ -191,12 +232,12 @@ class FuncionarioService:
 			return
 
 		connection.execute(
-			text("DELETE FROM FOTO WHERE cpf = :cpf"),
+			text("DELETE FROM FOTO WHERE cpf_func = :cpf"),
 			{"cpf": cpf},
 		)
 
 		if foto is not None:
 			connection.execute(
-				text("INSERT INTO FOTO (cpf, imagem) VALUES (:cpf, :foto)"),
+				text("INSERT INTO FOTO (cpf_func, imagem) VALUES (:cpf, :foto)"),
 				{"cpf": cpf, "foto": foto},
 			)

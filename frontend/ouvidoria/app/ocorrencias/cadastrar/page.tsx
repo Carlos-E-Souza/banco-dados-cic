@@ -3,6 +3,8 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import AppFooter from "../../../components/AppFooter";
+import AlertPopup from "../../../components/AlertPopup";
+import DateInput from "../../../components/DateInput";
 import Navbar from "../../../components/Navbar";
 import { useUser } from "../../../components/UserContext";
 
@@ -14,7 +16,7 @@ type TipoOcorrencia = {
 type FormState = {
 	tipoOcorrencia: string;
 	estado: string;
-	municipio: string;
+	cidade: string;
 	bairro: string;
 	endereco: string;
 	data: string;
@@ -24,17 +26,18 @@ type FormState = {
 const initialFormState: FormState = {
 	tipoOcorrencia: "",
 	estado: "",
-	municipio: "",
+	cidade: "",
 	bairro: "",
 	endereco: "",
 	data: "",
 	descricao: "",
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
 
 const CadastrarOcorrenciaPage = () => {
-	const { email: loggedEmail } = useUser();
+	const { email: loggedEmail, cpf } = useUser();
 	const [formData, setFormData] = useState<FormState>(initialFormState);
 	const [tipos, setTipos] = useState<TipoOcorrencia[]>([]);
 	const [isLoadingTipos, setIsLoadingTipos] = useState(false);
@@ -50,7 +53,7 @@ const CadastrarOcorrenciaPage = () => {
 			setErrorMessage("");
 
 			try {
-				const response = await axios.get<TipoOcorrencia[]>(`${API_BASE_URL}/tipos-ocorrencia`, {
+				const response = await axios.get<TipoOcorrencia[]>(`${API_BASE_URL}/tipos-ocorrencias`, {
 					signal: controller.signal,
 				});
 				setTipos(response.data ?? []);
@@ -79,7 +82,7 @@ const CadastrarOcorrenciaPage = () => {
 
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
-		if (!loggedEmail) {
+		if (!loggedEmail || !cpf) {
 			setErrorMessage("Faça login para registrar uma ocorrência.");
 			return;
 		}
@@ -89,16 +92,20 @@ const CadastrarOcorrenciaPage = () => {
 		setSuccessMessage("");
 
 		try {
-			await axios.post(`${API_BASE_URL}/ocorrencias`, {
-				tipoOcorrencia: Number(formData.tipoOcorrencia),
-				estado: formData.estado,
-				municipio: formData.municipio,
-				bairro: formData.bairro,
-				endereco: formData.endereco,
+			const payload = {
+				cod_tipo: Number(formData.tipoOcorrencia),
+				cpf_morador: cpf.trim(),
+				endereco: formData.endereco.trim(),
 				data: formData.data,
-				descricao: formData.descricao,
-				email: loggedEmail,
-			});
+				descr: formData.descricao.trim() || null,
+				localidade: {
+					estado: formData.estado.trim(),
+					cidade: formData.cidade.trim(),
+					bairro: formData.bairro.trim(),
+				},
+			};
+
+			await axios.post(`${API_BASE_URL}/ocorrencias`, payload);
 			setSuccessMessage("Ocorrência cadastrada com sucesso.");
 			setFormData(initialFormState);
 		} catch (error) {
@@ -114,12 +121,14 @@ const CadastrarOcorrenciaPage = () => {
 	return (
 		<div className="min-h-screen bg-white text-neutral-900">
 			<div className="flex min-h-screen flex-col">
+				{errorMessage && <AlertPopup type="error" message={errorMessage} onClose={() => setErrorMessage("")} />}
+				{successMessage && (
+					<AlertPopup type="success" message={successMessage} onClose={() => setSuccessMessage("")} />
+				)}
 				<Navbar
 					links={[
-						{ href: "/ocorrencias/cadastrar", label: "Cadastrar Ocorrência" },
+						{ href: "/ocorrencias", label: "Ocorrências" },
 						{ href: "/ocorrencias/listar", label: "Listar Ocorrências" },
-						{ href: "/ocorrencias/editar", label: "Editar Ocorrência" },
-						{ href: "/ocorrencias/deletar", label: "Deletar Ocorrência" },
 					]}
 				/>
 				<main className="flex flex-1 justify-center px-6 py-16">
@@ -129,7 +138,7 @@ const CadastrarOcorrenciaPage = () => {
 								Cadastrar ocorrência
 							</h1>
 							<p className="max-w-2xl text-lg text-neutral-600">
-								Informe os dados da ocorrência para registrá-la junto ao órgão responsável. Campos com * são obrigatórios.
+								Informe os dados da ocorrência para registrá-la.<br/> Campos com * são obrigatórios.
 							</p>
 						</div>
 						<div className="rounded-3xl border border-neutral-200 bg-white p-8 shadow-[0_20px_60px_rgba(17,24,39,0.08)]">
@@ -172,14 +181,14 @@ const CadastrarOcorrenciaPage = () => {
 										/>
 									</div>
 									<div className="space-y-2">
-										<label htmlFor="municipio" className="text-sm font-semibold text-neutral-800">
-											Município*
+										<label htmlFor="cidade" className="text-sm font-semibold text-neutral-800">
+											Cidade*
 										</label>
 										<input
-											id="municipio"
+											id="cidade"
 											type="text"
-											value={formData.municipio}
-											onChange={handleChange("municipio")}
+											value={formData.cidade}
+											onChange={handleChange("cidade")}
 											placeholder="Brasília"
 											className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
 											required
@@ -221,35 +230,28 @@ const CadastrarOcorrenciaPage = () => {
 										<label htmlFor="data" className="text-sm font-semibold text-neutral-800">
 											Data da ocorrência*
 										</label>
-										<input
+										<DateInput
 											id="data"
-											type="date"
 											value={formData.data}
-											onChange={handleChange("data")}
-											className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
+											onChange={(value) => setFormData((prev) => ({ ...prev, data: value }))}
 											required
-										/>
-									</div>
-									<div className="space-y-2">
-										<label htmlFor="descricao" className="text-sm font-semibold text-neutral-800">
-											Descrição
-										</label>
-										<textarea
-											id="descricao"
-											value={formData.descricao}
-											onChange={handleChange("descricao")}
-											placeholder="Forneça detalhes adicionais da ocorrência."
-											className="h-32 w-full rounded-3xl border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
+											disabled={isSaving}
 										/>
 									</div>
 								</div>
-
-								{errorMessage && (
-									<p className="text-sm text-red-500">{errorMessage}</p>
-								)}
-								{successMessage && (
-									<p className="text-sm text-lime-600">{successMessage}</p>
-								)}
+								<div className="space-y-2">
+									<label htmlFor="descricao" className="text-sm font-semibold text-neutral-800">
+										Descrição
+									</label>
+									<textarea
+										id="descricao"
+										value={formData.descricao}
+										onChange={handleChange("descricao")}
+										placeholder="Forneça detalhes adicionais da ocorrência."
+										className="h-32 w-full rounded-3xl border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
+										disabled={isSaving}
+									/>
+								</div>
 
 								<button
 									type="submit"

@@ -8,7 +8,7 @@ from pydantic import BaseModel, EmailStr
 
 from ..service.funcionarioService import FuncionarioService
 
-router = APIRouter(prefix="/func")
+router = APIRouter(prefix="/funcionarios")
 
 _service: Optional[FuncionarioService] = None
 
@@ -26,6 +26,7 @@ def _get_funcionario_service() -> FuncionarioService:
 
 class FuncionarioCreate(BaseModel):
     cpf: str
+    nome: str
     orgao_pub: int
     cargo: int
     data_nasc: date
@@ -33,9 +34,11 @@ class FuncionarioCreate(BaseModel):
     fim_contrato: Optional[date] = None
     email: Optional[EmailStr] = None
     foto: Optional[str] = None
+    senha: str
 
 
 class FuncionarioUpdate(BaseModel):
+    nome: Optional[str] = None
     orgao_pub: Optional[int] = None
     cargo: Optional[int] = None
     data_nasc: Optional[date] = None
@@ -43,6 +46,7 @@ class FuncionarioUpdate(BaseModel):
     fim_contrato: Optional[date] = None
     email: Optional[EmailStr] = None
     foto: Optional[str] = None
+    senha: Optional[str] = None
 
 
 def _date_to_iso(value: Optional[date]) -> Optional[str]:
@@ -70,7 +74,8 @@ def _serialize_funcionario(record: Dict[str, Any]) -> Dict[str, Any]:
 @router.get("/")
 def listar_funcionarios() -> Sequence[Dict[str, Any]]:
     service = _get_funcionario_service()
-    return service.list_funcionarios()
+    funcionarios = service.list_funcionarios()
+    return [_serialize_funcionario(funcionario) for funcionario in funcionarios]
 
 
 @router.get("/cpf/{cpf}")
@@ -96,11 +101,13 @@ def criar_funcionario(payload: FuncionarioCreate) -> Dict[str, Any]:
     service = _get_funcionario_service()
     created = service.create_funcionario(
         cpf=payload.cpf,
+        nome=payload.nome,
         orgao_pub=payload.orgao_pub,
         cargo=payload.cargo,
         data_nasc=payload.data_nasc.isoformat(),
         inicio_contrato=payload.inicio_contrato.isoformat(),
         fim_contrato=_date_to_iso(payload.fim_contrato),
+        senha=payload.senha,
         foto=_decode_foto(payload.foto),
         email=payload.email,
     )

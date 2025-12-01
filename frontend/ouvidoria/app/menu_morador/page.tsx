@@ -11,6 +11,7 @@ const MenuMoradorPage = () => {
 						{ href: "/menu_morador/informacoes", label: "Minhas informações" },
 						{ href: "/ocorrencias", label: "Ocorrências" },
 					]}
+					showLogout
 				/>
 				<main className="flex flex-1 justify-center px-6 py-16">
 					<div className="w-full max-w-6xl space-y-12">

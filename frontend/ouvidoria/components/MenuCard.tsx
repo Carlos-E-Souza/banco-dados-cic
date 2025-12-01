@@ -15,7 +15,7 @@ const accentStyles: Record<NonNullable<MenuCardProps["accent"]>, string> = {
   lime:
     "bg-lime-100 border-lime-300 text-neutral-900 hover:border-lime-400 hover:shadow-[0_16px_40px_rgba(199,255,107,0.5)]",
   dark:
-    "bg-neutral-900 border-neutral-900 text-white hover:shadow-[0_16px_40px_rgba(17,24,39,0.4)]",
+    "bg-neutral-700 border-neutral-900 text-white hover:shadow-[0_16px_40px_rgba(17,24,39,0.4)]",
 };
 
 const MenuCard = ({ title, description, href, accent = "neutral", icon }: MenuCardProps) => {

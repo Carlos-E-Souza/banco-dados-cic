@@ -1,44 +1,71 @@
 "use client";
 
 import axios from "axios";
-import { useEffect, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import AppFooter from "../../../components/AppFooter";
+import DateInput from "../../../components/DateInput";
 import Navbar from "../../../components/Navbar";
+import AlertPopup from "../../../components/AlertPopup";
 import { useUser } from "../../../components/UserContext";
 
 type MoradorFormState = {
+	nome: string;
 	email: string;
-	endereco: string;
 	cpf: string;
+	endereco: string;
 	dataNascimento: string;
+	telefone: string;
+	ddd: string;
+	estado: string;
+	cidade: string;
+	bairro: string;
+	senha: string;
 };
 
 const initialFormState: MoradorFormState = {
+	nome: "",
 	email: "",
-	endereco: "",
 	cpf: "",
+	endereco: "",
 	dataNascimento: "",
+	telefone: "",
+	ddd: "",
+	estado: "",
+	cidade: "",
+	bairro: "",
+	senha: "",
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-const links = [
-	{ href: "/informacoes", label: "Minhas informações" },
-	{ href: "/ocorrencias", label: "Ocorrências" },
-];
+const links = [{ href: "/menu_morador", label: "Menu" }];
+
+type MoradorApiResponse = {
+	nome?: string | null;
+	email?: string | null;
+	cpf?: string | null;
+	endereco?: string | null;
+	data_nasc?: string | null;
+	telefone?: string | null;
+	ddd?: string | null;
+	estado?: string | null;
+	cidade?: string | null;
+	bairro?: string | null;
+};
 
 const InformacoesPage = () => {
-	const { email: loggedEmail } = useUser();
+	const { email: loggedEmail, cpf: loggedCpf, setCpf, setEmail } = useUser();
 	const [formData, setFormData] = useState<MoradorFormState>(initialFormState);
 	const [isFetching, setIsFetching] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
 	const [errorMessage, setErrorMessage] = useState("");
 	const [successMessage, setSuccessMessage] = useState("");
 
-	const isReady = useMemo(() => Boolean(loggedEmail), [loggedEmail]);
+	const cpfForRequest = useMemo(() => (loggedCpf ? loggedCpf.replace(/\D/g, "") : ""), [loggedCpf]);
+	const isReady = useMemo(() => Boolean(cpfForRequest), [cpfForRequest]);
 
 	useEffect(() => {
-		if (!loggedEmail) {
+		if (!cpfForRequest) {
 			return;
 		}
 
@@ -50,18 +77,35 @@ const InformacoesPage = () => {
 			setSuccessMessage("");
 
 			try {
-				const response = await axios.get<{ email: string; endereco?: string; cpf?: string; data_nascimento?: string }>(
-					`${API_BASE_URL}/moradores/${encodeURIComponent(loggedEmail)}`,
+				const response = await axios.get<MoradorApiResponse>(
+					`${API_BASE_URL}/moradores/cpf/${encodeURIComponent(cpfForRequest)}`,
 					{ signal: controller.signal }
 				);
 				const data = response.data;
 
-				setFormData({
-					email: data.email ?? loggedEmail,
-					endereco: data.endereco ?? "",
-					cpf: data.cpf ?? "",
-					dataNascimento: data.data_nascimento ?? "",
-				});
+				const nextForm: MoradorFormState = {
+					nome: (data.nome ?? "").trim(),
+					email: (data.email ?? loggedEmail ?? "").trim(),
+					cpf: (data.cpf ?? cpfForRequest).trim(),
+					endereco: (data.endereco ?? "").trim(),
+					dataNascimento: data.data_nasc ?? "",
+					telefone: (data.telefone ?? "").trim(),
+					ddd: (data.ddd ?? "").trim(),
+					estado: (data.estado ?? "").trim(),
+					cidade: (data.cidade ?? "").trim(),
+					bairro: (data.bairro ?? "").trim(),
+					senha: "",
+				};
+
+				setFormData(nextForm);
+
+				if (nextForm.cpf) {
+					setCpf(nextForm.cpf);
+				}
+
+				if (nextForm.email) {
+					setEmail(nextForm.email);
+				}
 			} catch (error) {
 				if (!controller.signal.aborted) {
 					if (axios.isAxiosError(error)) {
@@ -80,33 +124,94 @@ const InformacoesPage = () => {
 		return () => {
 			controller.abort();
 		};
-	}, [loggedEmail]);
+	}, [cpfForRequest, loggedEmail, setCpf, setEmail]);
 
 	const handleChange = (field: keyof MoradorFormState) =>
-		(event: React.ChangeEvent<HTMLInputElement>) => {
+		(event: ChangeEvent<HTMLInputElement>) => {
 			const { value } = event.target;
 			setFormData((prev) => ({ ...prev, [field]: value }));
 		};
 
-	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
-		if (!loggedEmail) {
+
+		setErrorMessage("");
+		setSuccessMessage("");
+
+		if (!cpfForRequest) {
+			setErrorMessage("CPF não encontrado. Faça login novamente.");
+			return;
+		}
+
+		const trimmedNome = formData.nome.trim();
+		const trimmedEmail = formData.email.trim();
+		const trimmedEndereco = formData.endereco.trim();
+		const trimmedTelefone = formData.telefone.trim();
+		const trimmedDdd = formData.ddd.trim();
+		const trimmedEstado = formData.estado.trim();
+		const trimmedCidade = formData.cidade.trim();
+		const trimmedBairro = formData.bairro.trim();
+		const newPassword = formData.senha.trim();
+		const hasLocalidadeFields = Boolean(trimmedEstado || trimmedCidade || trimmedBairro);
+
+		if (!trimmedNome) {
+			setErrorMessage("Informe o nome do morador.");
+			return;
+		}
+
+		if (!trimmedEmail) {
+			setErrorMessage("Informe um email válido.");
+			return;
+		}
+
+		if (hasLocalidadeFields && !(trimmedEstado && trimmedCidade && trimmedBairro)) {
+			setErrorMessage("Informe estado, cidade e bairro para atualizar a localidade.");
 			return;
 		}
 
 		setIsSaving(true);
-		setErrorMessage("");
-		setSuccessMessage("");
 
 		try {
+			const payload: Record<string, unknown> = {
+				nome: trimmedNome,
+				endereco: trimmedEndereco,
+				data_nasc: formData.dataNascimento || null,
+				email: trimmedEmail,
+				telefone: trimmedTelefone || null,
+				ddd: trimmedDdd || null,
+			};
+
+			if (hasLocalidadeFields) {
+				payload.localidade = {
+					estado: trimmedEstado,
+					cidade: trimmedCidade,
+					bairro: trimmedBairro,
+				};
+			}
+
+			if (newPassword) {
+				payload.senha = newPassword;
+			}
+
 			await axios.put(
-				`${API_BASE_URL}/moradores/${encodeURIComponent(loggedEmail)}`,
-				{
-					endereco: formData.endereco,
-					cpf: formData.cpf,
-					data_nascimento: formData.dataNascimento,
-				}
+				`${API_BASE_URL}/moradores/${encodeURIComponent(cpfForRequest)}`,
+				payload
 			);
+
+			setFormData((prev) => ({
+				...prev,
+				nome: trimmedNome,
+				email: trimmedEmail,
+				endereco: trimmedEndereco,
+				telefone: trimmedTelefone,
+				ddd: trimmedDdd,
+				estado: trimmedEstado,
+				cidade: trimmedCidade,
+				bairro: trimmedBairro,
+				senha: "",
+			}));
+
+			setEmail(trimmedEmail);
 			setSuccessMessage("Dados atualizados com sucesso.");
 		} catch (error) {
 			if (axios.isAxiosError(error)) {
@@ -124,13 +229,13 @@ const InformacoesPage = () => {
 			<div className="flex min-h-screen flex-col">
 				<Navbar links={links} />
 				<main className="flex flex-1 justify-center px-6 py-16">
+					<AlertPopup message={errorMessage} type="error" onClose={() => setErrorMessage("")} />
+					<AlertPopup message={successMessage} type="success" onClose={() => setSuccessMessage("")} />
 					<div className="w-full max-w-4xl space-y-10">
 						<div className="space-y-4 text-center md:text-left">
-							<h1 className="text-4xl font-semibold leading-tight text-neutral-900">
-								Minhas informações
-							</h1>
+							<h1 className="text-4xl font-semibold leading-tight text-neutral-900">Minhas informações</h1>
 							<p className="max-w-2xl text-lg text-neutral-600">
-								Gerencie seus dados pessoais utilizados nas manifestações. Atualize endereço, CPF e data de nascimento sempre que necessário.
+								Gerencie seus dados pessoais utilizados nas manifestações. Atualize seus dados sempre que necessário.
 							</p>
 						</div>
 
@@ -143,6 +248,21 @@ const InformacoesPage = () => {
 								<form className="space-y-6" onSubmit={handleSubmit}>
 									<div className="grid gap-4 md:grid-cols-2">
 										<div className="space-y-2">
+											<label htmlFor="nome" className="text-sm font-semibold text-neutral-800">
+												Nome
+											</label>
+											<input
+												id="nome"
+												type="text"
+												value={formData.nome}
+												onChange={handleChange("nome")}
+												placeholder="Nome completo"
+												className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
+												required
+												disabled={isFetching || isSaving}
+											/>
+										</div>
+										<div className="space-y-2">
 											<label htmlFor="email" className="text-sm font-semibold text-neutral-800">
 												Email
 											</label>
@@ -150,10 +270,16 @@ const InformacoesPage = () => {
 												id="email"
 												type="email"
 												value={formData.email}
-												readOnly
-												className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-500 transition-colors focus:border-neutral-300 focus:outline-none"
+												onChange={handleChange("email")}
+												placeholder="seu.email@dominio.com"
+												className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
+												required
+												disabled={isFetching || isSaving}
 											/>
 										</div>
+									</div>
+
+									<div className="grid gap-4 md:grid-cols-2">
 										<div className="space-y-2">
 											<label htmlFor="cpf" className="text-sm font-semibold text-neutral-800">
 												CPF
@@ -161,15 +287,69 @@ const InformacoesPage = () => {
 											<input
 												id="cpf"
 												type="text"
-												maxLength={14}
 												value={formData.cpf}
-												onChange={handleChange("cpf")}
-												placeholder="000.000.000-00"
+												readOnly
+												className="w-full rounded-full border border-neutral-200 bg-neutral-100 px-4 py-3 text-sm text-neutral-500"
+											/>
+										</div>
+										<div className="space-y-2">
+											<label htmlFor="dataNascimento" className="text-sm font-semibold text-neutral-800">
+												Data de nascimento
+											</label>
+											<DateInput
+												id="dataNascimento"
+												value={formData.dataNascimento}
+												onChange={(value) => setFormData((prev) => ({ ...prev, dataNascimento: value }))}
+												disabled={isFetching || isSaving}
+											/>
+										</div>
+									</div>
+
+									<div className="grid gap-4 md:grid-cols-3">
+										<div className="space-y-2">
+											<label htmlFor="estado" className="text-sm font-semibold text-neutral-800">
+												Estado
+											</label>
+											<input
+												id="estado"
+												type="text"
+												value={formData.estado}
+												onChange={handleChange("estado")}
+												placeholder="UF"
+												className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
+												disabled={isFetching || isSaving}
+											/>
+										</div>
+										<div className="space-y-2">
+											<label htmlFor="cidade" className="text-sm font-semibold text-neutral-800">
+												Cidade
+											</label>
+											<input
+												id="cidade"
+												type="text"
+												value={formData.cidade}
+												onChange={handleChange("cidade")}
+												placeholder="Brasília"
+												className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
+												disabled={isFetching || isSaving}
+											/>
+										</div>
+										<div className="space-y-2">
+											<label htmlFor="bairro" className="text-sm font-semibold text-neutral-800">
+												Bairro
+											</label>
+											<input
+												id="bairro"
+												type="text"
+												value={formData.bairro}
+												onChange={handleChange("bairro")}
+												placeholder="Asa Norte"
 												className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
 												disabled={isFetching}
 											/>
 										</div>
 									</div>
+
 									<div className="grid gap-4 md:grid-cols-2">
 										<div className="space-y-2">
 											<label htmlFor="endereco" className="text-sm font-semibold text-neutral-800">
@@ -182,30 +362,58 @@ const InformacoesPage = () => {
 												onChange={handleChange("endereco")}
 												placeholder="Rua Exemplo, 123"
 												className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
-												disabled={isFetching}
+												disabled={isFetching || isSaving}
 											/>
 										</div>
 										<div className="space-y-2">
-											<label htmlFor="dataNascimento" className="text-sm font-semibold text-neutral-800">
-												Data de nascimento
+											<label htmlFor="telefone" className="text-sm font-semibold text-neutral-800">
+												Telefone
 											</label>
 											<input
-												id="dataNascimento"
-												type="date"
-												value={formData.dataNascimento}
-												onChange={handleChange("dataNascimento")}
+												id="telefone"
+												type="tel"
+												value={formData.telefone}
+												onChange={handleChange("telefone")}
+												placeholder="(61) 99999-9999"
+												inputMode="tel"
 												className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
-												disabled={isFetching}
+												disabled={isFetching || isSaving}
 											/>
 										</div>
 									</div>
 
-									{errorMessage && (
-										<p className="text-sm text-red-500">{errorMessage}</p>
-									)}
-									{successMessage && (
-										<p className="text-sm text-lime-600">{successMessage}</p>
-									)}
+									<div className="grid gap-4 md:grid-cols-2">
+										<div className="space-y-2">
+											<label htmlFor="ddd" className="text-sm font-semibold text-neutral-800">
+												DDD
+											</label>
+											<input
+												id="ddd"
+												type="text"
+												value={formData.ddd}
+												onChange={handleChange("ddd")}
+												placeholder="61"
+												inputMode="numeric"
+												maxLength={3}
+												className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
+												disabled={isFetching || isSaving}
+											/>
+										</div>
+										<div className="space-y-2">
+											<label htmlFor="senha" className="text-sm font-semibold text-neutral-800">
+												Nova senha
+											</label>
+											<input
+												id="senha"
+												type="password"
+												value={formData.senha}
+												onChange={handleChange("senha")}
+												placeholder="Deixe em branco para manter a atual"
+												className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
+												disabled={isFetching || isSaving}
+											/>
+										</div>
+									</div>
 
 									<button
 										type="submit"

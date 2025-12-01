@@ -1,4 +1,5 @@
 import { ChangeEvent, FormEvent } from "react";
+import DateInput from "../DateInput";
 import { FiX } from "react-icons/fi";
 import { Ocorrencia } from "../ocorrencias/types";
 import { OrgaoPublico } from "../funcionarios/types";
@@ -90,7 +91,7 @@ const CreateServicoModal = ({ isOpen, orgaos, ocorrencias, formState, isSaving, 
 							</option>
 							{ocorrencias.map((ocorrencia) => (
 								<option key={ocorrencia.cod_oco} value={ocorrencia.cod_oco}>
-									#{ocorrencia.cod_oco} — {ocorrencia.tipo_nome}
+									#{ocorrencia.cod_oco}-{ocorrencia.tipo_nome}
 								</option>
 							))}
 						</select>
@@ -100,25 +101,22 @@ const CreateServicoModal = ({ isOpen, orgaos, ocorrencias, formState, isSaving, 
 							<label htmlFor="servico-inicio" className="text-sm font-semibold text-neutral-800">
 								Início do serviço
 							</label>
-							<input
+							<DateInput
 								id="servico-inicio"
-								type="date"
 								value={formState.inicioServico}
-								onChange={handleChange("inicioServico")}
-								className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
-						/>
+								onChange={(value) => onChange("inicioServico", value)}
+							/>
 						</div>
 						<div className="space-y-2">
 							<label htmlFor="servico-fim" className="text-sm font-semibold text-neutral-800">
 								Conclusão do serviço
 							</label>
-							<input
+							<DateInput
 								id="servico-fim"
-								type="date"
 								value={formState.fimServico}
-								onChange={handleChange("fimServico")}
-								className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
-						/>
+								onChange={(value) => onChange("fimServico", value)}
+								isClearable
+							/>
 						</div>
 					</div>
 					<div className="space-y-2">

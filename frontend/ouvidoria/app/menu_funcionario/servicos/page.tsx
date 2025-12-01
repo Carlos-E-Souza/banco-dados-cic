@@ -4,6 +4,7 @@ import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
 import AppFooter from "../../../components/AppFooter";
 import Navbar from "../../../components/Navbar";
+import AlertPopup from "../../../components/AlertPopup";
 import { useUser } from "../../../components/UserContext";
 import { Ocorrencia } from "../../../components/ocorrencias/types";
 import { OrgaoPublico } from "../../../components/funcionarios/types";
@@ -18,75 +19,7 @@ import {
 	Servico,
 } from "../../../components/servicos/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
-
-const mockOcorrencias: Ocorrencia[] = [
-	{
-		cod_oco: 101,
-		cod_tipo: 1,
-		tipo_nome: "Buraco na via",
-		estado: "DF",
-		municipio: "Brasília",
-		bairro: "Asa Norte",
-		endereco: "SQN 308 Bloco A",
-		data: "2024-09-12",
-		status: "Em análise",
-		descricao: "Buraco profundo próximo à faixa de pedestres causando risco aos moradores.",
-	},
-	{
-		cod_oco: 102,
-		cod_tipo: 2,
-		tipo_nome: "Iluminação pública",
-		estado: "DF",
-		municipio: "Brasília",
-		bairro: "Asa Sul",
-		endereco: "CLS 409",
-		data: "2024-09-05",
-		status: "Aguardando atendimento",
-		descricao: "Poste em frente ao bloco C com lâmpada queimada há mais de duas semanas.",
-	},
-	{
-		cod_oco: 103,
-		cod_tipo: 3,
-		tipo_nome: "Limpeza urbana",
-		estado: "DF",
-		municipio: "Brasília",
-		bairro: "Lago Norte",
-		endereco: "QL 12 Conjunto 5",
-		data: "2024-08-28",
-		status: "Finalizada",
-		descricao: "Solicitação de remoção de entulhos já atendida.",
-	},
-];
-
-const mockOrgaos: OrgaoPublico[] = [
-	{ cod_orgao: 1, nome: "Secretaria de Obras", estado: "DF" },
-	{ cod_orgao: 2, nome: "Secretaria de Educação", estado: "DF" },
-	{ cod_orgao: 3, nome: "Secretaria de Saúde", estado: "DF" },
-];
-
-const mockServicos: Servico[] = [
-	{
-		cod_servico: 201,
-		cod_orgao: 1,
-		cod_ocorrencia: 101,
-		nome: "Recomposição de asfalto",
-		descr: "Equipe de manutenção realizará o reparo do buraco e nivelamento da via.",
-		inicio_servico: "2024-09-20",
-		fim_servico: null,
-		orgao_nome: "Secretaria de Obras",
-	},
-	{
-		cod_servico: 202,
-		cod_orgao: 2,
-		cod_ocorrencia: 102,
-		nome: "Substituição de lâmpada",
-		descr: "Manutenção programada para troca da lâmpada queimada.",
-		inicio_servico: "2024-09-10",
-		fim_servico: "2024-09-12",
-		orgao_nome: "Secretaria de Educação",
-	},
-];
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 const emptyCreateForm: CreateServicoFormState = {
 	nome: "",
@@ -107,14 +40,37 @@ const emptyEditForm: EditServicoFormState = {
 
 const funcionarioLinks = [
 	{ href: "/menu_funcionario", label: "Menu" },
-	{ href: "/menu_funcionario/servicos", label: "Serviços" },
 ];
+
+const normalizeServicoRecord = (
+	servico: Servico | (Servico & { cod_ocorre?: number; nota_media_servico?: number | string | null }),
+	orgaosList: OrgaoPublico[],
+): Servico => {
+	const extended = servico as Servico & { cod_ocorre?: number; nota_media_servico?: number | string | null };
+	const codOcorrenciaRaw = extended.cod_ocorrencia ?? extended.cod_ocorre ?? servico.cod_ocorrencia;
+	const notaMediaRaw = extended.nota_media_servico;
+	const parsedNota = notaMediaRaw === null || notaMediaRaw === undefined ? null : Number(notaMediaRaw);
+	const notaMedia = parsedNota !== null && Number.isFinite(parsedNota)
+		? Math.round(parsedNota * 100) / 100
+		: null;
+	const orgaoNome =
+		servico.orgao_nome ?? orgaosList.find((orgao) => orgao.cod_orgao === servico.cod_orgao)?.nome ?? "";
+
+	return {
+		...servico,
+		cod_servico: Number(servico.cod_servico),
+		cod_orgao: Number(servico.cod_orgao),
+		cod_ocorrencia: Number(codOcorrenciaRaw),
+		nota_media_servico: notaMedia,
+		orgao_nome: orgaoNome,
+	};
+};
 
 const ServicosPage = () => {
 	const { isFuncionario } = useUser();
-	const [servicos, setServicos] = useState<Servico[]>(mockServicos);
-	const [orgaos, setOrgaos] = useState<OrgaoPublico[]>(mockOrgaos);
-	const [ocorrencias, setOcorrencias] = useState<Ocorrencia[]>(mockOcorrencias);
+	const [servicos, setServicos] = useState<Servico[]>([]);
+	const [orgaos, setOrgaos] = useState<OrgaoPublico[]>([]);
+	const [ocorrencias, setOcorrencias] = useState<Ocorrencia[]>([]);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
@@ -141,23 +97,15 @@ const ServicosPage = () => {
 					axios.get<Ocorrencia[]>(`${API_BASE_URL}/ocorrencias`, { signal: controller.signal }),
 				]);
 
-				const servicosData = servicosResponse.data?.length ? servicosResponse.data : mockServicos;
-				const orgaosData = orgaosResponse.data?.length ? orgaosResponse.data : mockOrgaos;
-				const ocorrenciasData = ocorrenciasResponse.data?.length ? ocorrenciasResponse.data : mockOcorrencias;
+				const orgaosData = Array.isArray(orgaosResponse.data) ? orgaosResponse.data : [];
+				const ocorrenciasData = Array.isArray(ocorrenciasResponse.data) ? ocorrenciasResponse.data : [];
+				const servicosData = Array.isArray(servicosResponse.data) ? servicosResponse.data : [];
+
+				const normalizedServicos = servicosData.map((servico) => normalizeServicoRecord(servico, orgaosData));
 
 				setOrgaos(orgaosData);
 				setOcorrencias(ocorrenciasData);
-				setServicos(
-					servicosData.map((servico) => {
-						const codOcorrencia = (servico as Servico & { cod_ocorre?: number }).cod_ocorrencia ?? (servico as Servico & { cod_ocorre?: number }).cod_ocorre ?? servico.cod_ocorrencia;
-						const orgaoNome = orgaosData.find((orgao) => orgao.cod_orgao === servico.cod_orgao)?.nome ?? servico.orgao_nome ?? "";
-						return {
-							...servico,
-							cod_ocorrencia: codOcorrencia,
-							orgao_nome: orgaoNome,
-						};
-					})
-				);
+				setServicos(normalizedServicos);
 			} catch (error) {
 				if (!controller.signal.aborted) {
 					if (axios.isAxiosError(error)) {
@@ -179,9 +127,10 @@ const ServicosPage = () => {
 	const filteredServicos = useMemo(() => {
 		const term = searchTerm.trim().toLowerCase();
 		if (!term) {
-			return servicos;
+			return servicos.sort((a, b) => a.cod_servico - b.cod_servico);
 		}
-		return servicos.filter((servico) => servico.nome.toLowerCase().includes(term));
+		return servicos.filter((servico) => servico.nome.toLowerCase().includes(term))
+			.sort((a, b) => a.cod_servico - b.cod_servico);
 	}, [servicos, searchTerm]);
 
 	const handleCreateFieldChange = (field: keyof CreateServicoFormState, value: string) => {
@@ -244,49 +193,55 @@ const ServicosPage = () => {
 	const handleCreateSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
+		const trimmedNome = createForm.nome.trim();
+		const trimmedDescricao = createForm.descricao.trim();
+		const codOrgaoValue = Number(createForm.codOrgao);
+		const codOcorrenciaValue = Number(createForm.codOcorrencia);
+		setSuccessMessage("");
+
+		if (!trimmedNome) {
+			setErrorMessage("Informe o nome do serviço.");
+			return;
+		}
+
+		if (!Number.isFinite(codOrgaoValue) || codOrgaoValue <= 0) {
+			setErrorMessage("Selecione um órgão público válido.");
+			return;
+		}
+
+		if (!Number.isFinite(codOcorrenciaValue) || codOcorrenciaValue <= 0) {
+			setErrorMessage("Selecione a ocorrência vinculada.");
+			return;
+		}
+
 		setIsSaving(true);
 		setErrorMessage("");
 		setSuccessMessage("");
 
 		const payload = {
-			nome: createForm.nome,
-			cod_orgao: Number(createForm.codOrgao),
-			cod_ocorrencia: Number(createForm.codOcorrencia),
-			descr: createForm.descricao,
+			nome: trimmedNome,
+			cod_orgao: codOrgaoValue,
+			cod_ocorrencia: codOcorrenciaValue,
+			descr: trimmedDescricao || null,
 			inicio_servico: createForm.inicioServico || null,
 			fim_servico: createForm.fimServico || null,
 		};
 
-		const orgaoNome = orgaos.find((item) => String(item.cod_orgao) === createForm.codOrgao)?.nome ?? "";
-
 		try {
 			const response = await axios.post<Servico>(`${API_BASE_URL}/servicos`, payload);
 			const responseData = response.data;
-
 			setServicos((prev) => {
-				const newItem = responseData
-					? {
-						...responseData,
-						cod_ocorrencia:
-							(responseData as Servico & { cod_ocorre?: number }).cod_ocorrencia ??
-							((responseData as Servico & { cod_ocorre?: number }).cod_ocorre ?? responseData.cod_ocorrencia),
-						orgao_nome:
-							responseData.orgao_nome ??
-							orgaos.find((item) => item.cod_orgao === responseData.cod_orgao)?.nome ??
-							orgaoNome,
-					}
-				: {
+				const record = responseData ? normalizeServicoRecord(responseData, orgaos) : normalizeServicoRecord({
 					cod_servico: prev.length ? Math.max(...prev.map((item) => item.cod_servico)) + 1 : 1,
-					cod_orgao: Number(createForm.codOrgao),
-					cod_ocorrencia: Number(createForm.codOcorrencia),
-					nome: createForm.nome,
-					descr: createForm.descricao,
+					cod_orgao: codOrgaoValue,
+					cod_ocorrencia: codOcorrenciaValue,
+					nome: trimmedNome,
+					descr: trimmedDescricao || null,
 					inicio_servico: createForm.inicioServico || null,
 					fim_servico: createForm.fimServico || null,
-					orgao_nome: orgaoNome,
-				};
-
-				return [...prev, newItem];
+					orgao_nome: null,
+				}, orgaos);
+				return [...prev, record];
 			});
 
 			setSuccessMessage("Serviço cadastrado com sucesso.");
@@ -308,33 +263,47 @@ const ServicosPage = () => {
 			return;
 		}
 
+		const trimmedNome = editForm.nome.trim();
+		const trimmedDescricao = editForm.descricao.trim();
+		const codOrgaoValue = Number(editForm.codOrgao);
+		setSuccessMessage("");
+
+		if (!trimmedNome) {
+			setErrorMessage("Informe o nome do serviço.");
+			return;
+		}
+
+		if (!Number.isFinite(codOrgaoValue) || codOrgaoValue <= 0) {
+			setErrorMessage("Selecione um órgão público válido.");
+			return;
+		}
+
 		setIsSaving(true);
 		setErrorMessage("");
 		setSuccessMessage("");
 
 		try {
-			await axios.put(`${API_BASE_URL}/servicos/${editingServico.cod_servico}`, {
-				nome: editForm.nome,
-				cod_orgao: Number(editForm.codOrgao),
-				descr: editForm.descricao,
+			const response = await axios.put<Servico>(`${API_BASE_URL}/servicos/${editingServico.cod_servico}`, {
+				nome: trimmedNome,
+				cod_orgao: codOrgaoValue,
+				descr: trimmedDescricao || null,
 				inicio_servico: editForm.inicioServico || null,
 				fim_servico: editForm.fimServico || null,
 			});
 
-			const orgaoNome = orgaos.find((item) => String(item.cod_orgao) === editForm.codOrgao)?.nome ?? editingServico.orgao_nome ?? "";
+			const responseData = response.data ?? {
+				...editingServico,
+				nome: trimmedNome,
+				cod_orgao: codOrgaoValue,
+				descr: trimmedDescricao || null,
+				inicio_servico: editForm.inicioServico || null,
+				fim_servico: editForm.fimServico || null,
+			};
 
 			setServicos((prev) =>
 				prev.map((item) =>
 					item.cod_servico === editingServico.cod_servico
-						? {
-							...item,
-							nome: editForm.nome,
-							cod_orgao: Number(editForm.codOrgao),
-							descr: editForm.descricao,
-							inicio_servico: editForm.inicioServico || null,
-							fim_servico: editForm.fimServico || null,
-							orgao_nome: orgaoNome,
-						}
+						? normalizeServicoRecord(responseData, orgaos)
 						: item
 				)
 			);
@@ -382,6 +351,12 @@ const ServicosPage = () => {
 	return (
 		<div className="min-h-screen bg-white text-neutral-900">
 			<div className="flex min-h-screen flex-col">
+				{errorMessage && (
+					<AlertPopup type="error" message={errorMessage} onClose={() => setErrorMessage("")} />
+				)}
+				{successMessage && (
+					<AlertPopup type="success" message={successMessage} onClose={() => setSuccessMessage("")} />
+				)}
 				<Navbar links={pageLinks} />
 				<main className="flex flex-1 justify-center px-6 py-16">
 					<div className="w-full max-w-6xl space-y-10">
@@ -417,8 +392,6 @@ const ServicosPage = () => {
 								<span>Registrar serviço</span>
 							</button>
 						</div>
-						{errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
-						{successMessage && <p className="text-sm text-lime-600">{successMessage}</p>}
 						<div className="grid gap-6 md:grid-cols-2">
 							{isLoading ? (
 								[...Array(4)].map((_, index) => (

@@ -1,4 +1,5 @@
 import { ChangeEvent, FormEvent } from "react";
+import DateInput from "../DateInput";
 import { OrgaoPublicoFormState } from "./types";
 
 type CreateOrgaoPublicoModalProps = {
@@ -74,12 +75,10 @@ const CreateOrgaoPublicoModal = ({ isOpen, formState, isSaving, onClose, onSubmi
 							<label htmlFor="novo-orgao-data-inicio" className="text-sm font-semibold text-neutral-800">
 								Data de início
 							</label>
-							<input
+							<DateInput
 								id="novo-orgao-data-inicio"
-								type="date"
 								value={formState.dataInicio}
-								onChange={handleChange("dataInicio")}
-								className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
+								onChange={(value) => onChange("dataInicio", value)}
 								required
 							/>
 						</div>
@@ -87,12 +86,11 @@ const CreateOrgaoPublicoModal = ({ isOpen, formState, isSaving, onClose, onSubmi
 							<label htmlFor="novo-orgao-data-fim" className="text-sm font-semibold text-neutral-800">
 								Data de término
 							</label>
-							<input
+							<DateInput
 								id="novo-orgao-data-fim"
-								type="date"
 								value={formState.dataFim}
-								onChange={handleChange("dataFim")}
-								className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
+								onChange={(value) => onChange("dataFim", value)}
+								isClearable
 							/>
 						</div>
 					</div>

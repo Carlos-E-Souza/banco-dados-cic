@@ -1,4 +1,7 @@
+"use client";
+
 import { ChangeEvent, FormEvent } from "react";
+import DateInput from "../DateInput";
 import { Cargo, Funcionario, FuncionarioFormState, OrgaoPublico } from "./types";
 
 type EditFuncionarioModalProps = {
@@ -12,6 +15,9 @@ type EditFuncionarioModalProps = {
 	onChange: (field: keyof FuncionarioFormState, value: string) => void;
 };
 
+const inputClassName =
+	"w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200";
+
 const EditFuncionarioModal = ({ funcionario, cargos, orgaos, formState, isSaving, onClose, onSubmit, onChange }: EditFuncionarioModalProps) => {
 	if (!funcionario) {
 		return null;
@@ -19,6 +25,32 @@ const EditFuncionarioModal = ({ funcionario, cargos, orgaos, formState, isSaving
 
 	const handleChange = (field: keyof FuncionarioFormState) =>
 		(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => onChange(field, event.target.value);
+
+	const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+		const input = event.target;
+		const file = input.files?.[0];
+		if (!file) {
+			onChange("foto", "");
+			input.value = "";
+			return;
+		}
+
+		const reader = new FileReader();
+		reader.onloadend = () => {
+			if (typeof reader.result === "string") {
+				const [, base64Data] = reader.result.split(",");
+				onChange("foto", base64Data ?? "");
+			}
+			input.value = "";
+		};
+		reader.readAsDataURL(file);
+	};
+
+	const handleRemoveImage = () => {
+		onChange("foto", "");
+	};
+
+	const previewSrc = formState.foto ? `data:image/*;base64,${formState.foto}` : null;
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
@@ -43,6 +75,34 @@ const EditFuncionarioModal = ({ funcionario, cargos, orgaos, formState, isSaving
 					</button>
 				</div>
 				<form className="mt-6 space-y-5" onSubmit={onSubmit}>
+					<div className="flex flex-col items-center gap-4 md:flex-row md:items-center">
+						<div className="flex h-[100px] w-[100px] items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-50">
+							{previewSrc ? (
+								<img
+									src={previewSrc}
+									alt={`Foto atual de ${funcionario.nome}`}
+									className="h-full w-full object-cover"
+								/>
+							) : (
+								<span className="px-3 text-center text-xs text-neutral-400">Sem foto</span>
+							)}
+						</div>
+						<div className="flex flex-col items-center gap-2 text-center md:items-start md:text-left">
+							<label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-neutral-300 bg-neutral-100 px-4 py-2 text-sm font-semibold text-neutral-700 transition-colors hover:border-lime-400 hover:text-lime-600">
+								<input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+								Alterar imagem
+							</label>
+							{formState.foto && (
+								<button
+									type="button"
+									onClick={handleRemoveImage}
+									className="text-xs font-semibold text-red-500 transition-colors hover:text-red-600"
+								>
+									Remover foto
+								</button>
+							)}
+						</div>
+					</div>
 					<div className="grid gap-4 md:grid-cols-2">
 						<div className="space-y-2">
 							<label className="text-sm font-semibold text-neutral-800">CPF</label>
@@ -62,9 +122,39 @@ const EditFuncionarioModal = ({ funcionario, cargos, orgaos, formState, isSaving
 								type="text"
 								value={formState.nome}
 								onChange={handleChange("nome")}
-								className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
+								className={inputClassName}
 								required
 							/>
+						</div>
+					</div>
+					<div className="grid gap-4 md:grid-cols-2">
+						<div className="space-y-2">
+							<label htmlFor="funcionario-email" className="text-sm font-semibold text-neutral-800">
+								E-mail
+							</label>
+							<input
+								id="funcionario-email"
+								type="email"
+								value={formState.email}
+								onChange={handleChange("email")}
+								className={inputClassName}
+								placeholder="nome@exemplo.com"
+							/>
+						</div>
+						<div className="space-y-2">
+							<label htmlFor="funcionario-senha" className="text-sm font-semibold text-neutral-800">
+								Nova senha
+							</label>
+							<input
+								id="funcionario-senha"
+								type="password"
+								value={formState.senha}
+								onChange={handleChange("senha")}
+								className={inputClassName}
+								minLength={6}
+								placeholder="Deixe em branco para manter"
+							/>
+							<p className="text-xs text-neutral-500">Preencha apenas se desejar atualizar a senha.</p>
 						</div>
 					</div>
 					<div className="grid gap-4 md:grid-cols-2">
@@ -72,12 +162,10 @@ const EditFuncionarioModal = ({ funcionario, cargos, orgaos, formState, isSaving
 							<label htmlFor="funcionario-data-nasc" className="text-sm font-semibold text-neutral-800">
 								Data de nascimento
 							</label>
-							<input
+							<DateInput
 								id="funcionario-data-nasc"
-								type="date"
 								value={formState.dataNasc}
-								onChange={handleChange("dataNasc")}
-								className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
+								onChange={(value) => onChange("dataNasc", value)}
 								required
 							/>
 						</div>
@@ -85,12 +173,10 @@ const EditFuncionarioModal = ({ funcionario, cargos, orgaos, formState, isSaving
 							<label htmlFor="funcionario-inicio" className="text-sm font-semibold text-neutral-800">
 								Início do contrato
 							</label>
-							<input
+							<DateInput
 								id="funcionario-inicio"
-								type="date"
 								value={formState.inicioContrato}
-								onChange={handleChange("inicioContrato")}
-								className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
+								onChange={(value) => onChange("inicioContrato", value)}
 								required
 							/>
 						</div>
@@ -100,12 +186,11 @@ const EditFuncionarioModal = ({ funcionario, cargos, orgaos, formState, isSaving
 							<label htmlFor="funcionario-fim" className="text-sm font-semibold text-neutral-800">
 								Fim do contrato
 							</label>
-							<input
+							<DateInput
 								id="funcionario-fim"
-								type="date"
 								value={formState.fimContrato}
-								onChange={handleChange("fimContrato")}
-								className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
+								onChange={(value) => onChange("fimContrato", value)}
+								isClearable
 							/>
 						</div>
 						<div className="space-y-2">
@@ -116,7 +201,7 @@ const EditFuncionarioModal = ({ funcionario, cargos, orgaos, formState, isSaving
 								id="funcionario-orgao"
 								value={formState.orgaoPub}
 								onChange={handleChange("orgaoPub")}
-								className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
+								className={inputClassName}
 								required
 							>
 								<option value="" disabled>
@@ -138,7 +223,7 @@ const EditFuncionarioModal = ({ funcionario, cargos, orgaos, formState, isSaving
 							id="funcionario-cargo"
 							value={formState.cargo}
 							onChange={handleChange("cargo")}
-							className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
+							className={inputClassName}
 							required
 						>
 							<option value="" disabled>

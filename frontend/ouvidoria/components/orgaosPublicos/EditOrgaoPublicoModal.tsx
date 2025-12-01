@@ -1,6 +1,7 @@
 import { ChangeEvent, FormEvent } from "react";
 import { OrgaoPublico } from "../funcionarios/types";
 import { OrgaoPublicoFormState } from "./types";
+import DateInput from "../DateInput";
 
 type EditOrgaoPublicoModalProps = {
 	orgao: OrgaoPublico | null;
@@ -84,14 +85,12 @@ const EditOrgaoPublicoModal = ({ orgao, formState, isSaving, onClose, onSubmit, 
 							<label htmlFor="orgao-data-inicio" className="text-sm font-semibold text-neutral-800">
 								Data de início
 							</label>
-							<input
-								id="orgao-data-inicio"
-								type="date"
-								value={formState.dataInicio}
-								onChange={handleChange("dataInicio")}
-								className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
-								required
-							/>
+								<DateInput
+									id="orgao-data-inicio"
+									value={formState.dataInicio}
+									onChange={(value) => onChange("dataInicio", value)}
+									required
+								/>
 						</div>
 					</div>
 					<div className="grid gap-4 md:grid-cols-2">
@@ -99,13 +98,12 @@ const EditOrgaoPublicoModal = ({ orgao, formState, isSaving, onClose, onSubmit, 
 							<label htmlFor="orgao-data-fim" className="text-sm font-semibold text-neutral-800">
 								Data de término
 							</label>
-							<input
-								id="orgao-data-fim"
-								type="date"
-								value={formState.dataFim}
-								onChange={handleChange("dataFim")}
-								className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
-							/>
+								<DateInput
+									id="orgao-data-fim"
+									value={formState.dataFim}
+									onChange={(value) => onChange("dataFim", value)}
+									isClearable
+								/>
 						</div>
 						<div className="space-y-2 md:col-span-1">
 							<label htmlFor="orgao-descricao" className="text-sm font-semibold text-neutral-800">

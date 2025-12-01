@@ -8,7 +8,27 @@ type ServicoCardProps = {
 	onDelete: (servico: Servico) => void;
 };
 
+const formatDate = (rawDate?: string | null) => {
+	if (!rawDate) {
+		return "";
+	}
+
+	const [year, month, day] = rawDate.split("-").map(Number);
+	if (!year || !month || !day) {
+		return rawDate;
+	}
+
+	return new Intl.DateTimeFormat("pt-BR").format(new Date(year, month - 1, day));
+};
+
 const ServicoCard = ({ servico, onShowOcorrencia, onEdit, onDelete }: ServicoCardProps) => {
+	const formattedInicioDate = formatDate(servico.inicio_servico);
+	const formattedFimDate = formatDate(servico.fim_servico);
+	const notaMedia =
+		typeof servico.nota_media_servico === "number" && Number.isFinite(servico.nota_media_servico)
+			? servico.nota_media_servico
+			: null;
+	
 	return (
 		<div className="flex h-full flex-col justify-between rounded-3xl border border-neutral-200 bg-white p-6 shadow-[0_20px_60px_rgba(17,24,39,0.08)] transition-transform hover:-translate-y-1">
 			<div className="space-y-4">
@@ -20,14 +40,20 @@ const ServicoCard = ({ servico, onShowOcorrencia, onEdit, onDelete }: ServicoCar
 					<span className="rounded-full bg-lime-100 px-3 py-1 text-xs font-semibold text-lime-700">#{servico.cod_servico}</span>
 				</div>
 				{servico.descr && <p className="text-sm leading-relaxed text-neutral-600">{servico.descr}</p>}
+				<div className="flex flex-wrap items-center gap-2 text-sm text-neutral-700">
+					<span className="font-semibold text-neutral-800">Nota média</span>
+					<span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-700">
+						{notaMedia !== null ? notaMedia.toFixed(1) : "Sem avaliações"}
+					</span>
+				</div>
 				<div className="grid gap-3 text-sm text-neutral-600 sm:grid-cols-2">
 					<div>
 						<p className="font-semibold text-neutral-800">Início</p>
-						<p>{servico.inicio_servico ? new Date(servico.inicio_servico).toLocaleDateString() : "--"}</p>
+						<p>{servico.inicio_servico ? formattedInicioDate : "--"}</p>
 					</div>
 					<div>
 						<p className="font-semibold text-neutral-800">Conclusão</p>
-						<p>{servico.fim_servico ? new Date(servico.fim_servico).toLocaleDateString() : "Em andamento"}</p>
+						<p>{servico.fim_servico ? formattedFimDate : "Em andamento"}</p>
 					</div>
 				</div>
 				<p className="text-xs text-neutral-400">Ocorrência vinculada: #{servico.cod_ocorrencia}</p>

@@ -9,9 +9,23 @@ type OcorrenciaCardProps = {
 	onService?: (ocorrencia: Ocorrencia) => void;
 };
 
+const formatDate = (rawDate?: string | null) => {
+	if (!rawDate) {
+		return "";
+	}
+
+	const [year, month, day] = rawDate.split("-").map(Number);
+	if (!year || !month || !day) {
+		return rawDate;
+	}
+
+	return new Intl.DateTimeFormat("pt-BR").format(new Date(year, month - 1, day));
+};
+
 const OcorrenciaCard = ({ ocorrencia, isFuncionario, onEdit, onDelete, onEvaluate, onService }: OcorrenciaCardProps) => {
-	const formattedDate = ocorrencia.data ? new Date(ocorrencia.data).toLocaleDateString() : "";
-	const isFinalizada = ocorrencia.status?.toLowerCase() === "finalizada";
+	const formattedDate = formatDate(ocorrencia.data);
+	const isFinalizada = ocorrencia.tipo_status?.toLowerCase() === "finalizada";
+	const canEvaluate = !isFuncionario && isFinalizada;
 
 	return (
 		<div className="flex h-full flex-col justify-between rounded-3xl border border-neutral-200 bg-white p-6 shadow-[0_20px_60px_rgba(17,24,39,0.08)]">
@@ -19,7 +33,7 @@ const OcorrenciaCard = ({ ocorrencia, isFuncionario, onEdit, onDelete, onEvaluat
 				<div className="inline-flex items-center gap-2 rounded-full bg-lime-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-lime-700">
 					{ocorrencia.tipo_nome}
 					<span className="rounded-full bg-neutral-200 px-2 py-0.5 text-[10px] font-semibold text-neutral-700">
-						{ocorrencia.status}
+						{ocorrencia.tipo_status}
 					</span>
 				</div>
 				<h3 className="text-xl font-semibold text-neutral-900">Código #{ocorrencia.cod_oco}</h3>
@@ -28,9 +42,11 @@ const OcorrenciaCard = ({ ocorrencia, isFuncionario, onEdit, onDelete, onEvaluat
 						<span className="font-semibold text-neutral-800">Data:</span> {formattedDate}
 					</li>
 					<li>
-						<span className="font-semibold text-neutral-800">Local:</span> {ocorrencia.endereco}, {ocorrencia.bairro}, {ocorrencia.municipio} - {ocorrencia.estado}
+						<span className="font-semibold text-neutral-800">Local:</span> {ocorrencia.endereco}, {ocorrencia.bairro}, {ocorrencia.cidade} - {ocorrencia.estado}
 					</li>
-					{ocorrencia.descricao && <li className="text-neutral-500">{ocorrencia.descricao}</li>}
+					<li>
+						<span className="font-semibold text-neutral-800">Descrição:</span> {ocorrencia.descr}
+					</li>
 				</ul>
 			</div>
 			<div className="mt-6 flex flex-wrap items-center justify-end gap-3">
@@ -74,7 +90,7 @@ const OcorrenciaCard = ({ ocorrencia, isFuncionario, onEdit, onDelete, onEvaluat
 						</svg>
 						Excluir
 					</button>
-					{isFinalizada && (
+					{canEvaluate && (
 						<button
 							type="button"
 							onClick={() => onEvaluate?.(ocorrencia)}

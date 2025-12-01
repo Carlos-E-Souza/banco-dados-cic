@@ -9,6 +9,7 @@ export type Servico = {
 	inicio_servico?: string | null;
 	fim_servico?: string | null;
 	orgao_nome?: string | null;
+	nota_media_servico?: number | null;
 	ocorrencia?: Ocorrencia | null;
 };
 

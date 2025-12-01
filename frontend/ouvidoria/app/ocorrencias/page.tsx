@@ -9,20 +9,32 @@ const funcionarioLinks = [
 	{ href: "/ocorrencias/listar", label: "Listar Ocorrências", description: "Visualize todas as manifestações registradas e monitore seus status." },
 ];
 
+const funcionarioLinksNav = [
+	{ href: "/menu_funcionario", label: "Menu Funcionário" },
+	{ href: "/ocorrencias/listar", label: "Listar Ocorrências"},
+];
+
 const moradorLinks = [
 	{ href: "/ocorrencias/cadastrar", label: "Cadastrar Ocorrência", description: "Relate uma nova manifestação e encaminhe rapidamente para análise." },
 	{ href: "/ocorrencias/listar", label: "Listar Ocorrências", description: "Acompanhe as manifestações já enviadas, conferindo prazos e atualizações." },
 ];
 
+const moradorLinksNav = [
+	{ href: "/menu_morador", label: "Menu Morador" },
+	{ href: "/ocorrencias/cadastrar", label: "Cadastrar Ocorrência" },
+	{ href: "/ocorrencias/listar", label: "Listar Ocorrências"},
+];
+
 const OcorrenciaMenuPage = () => {
-	const { isFuncionario } = {isFuncionario: true}; // useUser();
+	const { isFuncionario } = useUser();
+	const linksNav = isFuncionario ? funcionarioLinksNav : moradorLinksNav;
 	const links = isFuncionario ? funcionarioLinks : moradorLinks;
 
 	return (
 		<div className="min-h-screen bg-white text-neutral-900">
 			<div className="flex min-h-screen flex-col">
 				<Navbar
-					links={links.map(({ href, label }) => ({ href, label }))}
+					links={linksNav.map(({ href, label }) => ({ href, label }))}
 				/>
 				<main className="flex flex-1 justify-center px-6 py-16">
 					<div className="w-full max-w-6xl space-y-12">

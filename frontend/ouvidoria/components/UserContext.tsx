@@ -5,6 +5,8 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 type UserContextValue = {
   email: string | null;
   setEmail: (value: string | null) => void;
+  cpf: string | null;
+  setCpf: (value: string | null) => void;
   isFuncionario: boolean;
   setIsFuncionario: (value: boolean) => void;
 };
@@ -12,6 +14,7 @@ type UserContextValue = {
 const UserContext = createContext<UserContextValue | undefined>(undefined);
 
 const STORAGE_KEY = "ouvidoria:user-email";
+const CPF_KEY = "ouvidoria:user-cpf";
 const FUNCIONARIO_KEY = "ouvidoria:is-funcionario";
 
 export const UserProvider = ({
@@ -20,6 +23,7 @@ export const UserProvider = ({
   children: React.ReactNode;
 }) => {
   const [email, setEmailState] = useState<string | null>(null);
+  const [cpf, setCpfState] = useState<string | null>(null);
   const [isFuncionario, setIsFuncionarioState] = useState<boolean>(false);
 
   useEffect(() => {
@@ -27,12 +31,17 @@ export const UserProvider = ({
       return;
     }
 
-    const storedEmail = window.localStorage.getItem(STORAGE_KEY);
+    const storedEmail = window.sessionStorage.getItem(STORAGE_KEY);
     if (storedEmail) {
       setEmailState(storedEmail);
     }
 
-    const storedIsFuncionario = window.localStorage.getItem(FUNCIONARIO_KEY);
+    const storedCpf = window.sessionStorage.getItem(CPF_KEY);
+    if (storedCpf) {
+      setCpfState(storedCpf);
+    }
+
+    const storedIsFuncionario = window.sessionStorage.getItem(FUNCIONARIO_KEY);
     if (storedIsFuncionario) {
       setIsFuncionarioState(storedIsFuncionario === "true");
     }
@@ -45,9 +54,22 @@ export const UserProvider = ({
     }
 
     if (value) {
-      window.localStorage.setItem(STORAGE_KEY, value);
+      window.sessionStorage.setItem(STORAGE_KEY, value);
     } else {
-      window.localStorage.removeItem(STORAGE_KEY);
+      window.sessionStorage.removeItem(STORAGE_KEY);
+    }
+  };
+
+  const setCpf = (value: string | null) => {
+    setCpfState(value);
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (value) {
+      window.sessionStorage.setItem(CPF_KEY, value);
+    } else {
+      window.sessionStorage.removeItem(CPF_KEY);
     }
   };
 
@@ -57,12 +79,12 @@ export const UserProvider = ({
       return;
     }
 
-    window.localStorage.setItem(FUNCIONARIO_KEY, String(value));
+    window.sessionStorage.setItem(FUNCIONARIO_KEY, String(value));
   };
 
   const value = useMemo<UserContextValue>(
-    () => ({ email, setEmail, isFuncionario, setIsFuncionario }),
-    [email, isFuncionario],
+    () => ({ email, setEmail, cpf, setCpf, isFuncionario, setIsFuncionario }),
+    [email, cpf, isFuncionario],
   );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

@@ -5,12 +5,28 @@ type ServiceDetailsModalProps = {
 	onClose: () => void;
 };
 
+
+const formatDate = (rawDate?: string | null) => {
+	if (!rawDate) {
+		return "";
+	}
+
+	const [year, month, day] = rawDate.split("-").map(Number);
+	if (!year || !month || !day) {
+		return rawDate;
+	}
+
+	return new Intl.DateTimeFormat("pt-BR").format(new Date(year, month - 1, day));
+};
+
+
 const ServiceDetailsModal = ({ servico, onClose }: ServiceDetailsModalProps) => {
 	if (!servico) {
 		return null;
 	}
 
-	const formatDate = (value?: string | null) => (value ? new Date(value).toLocaleDateString() : "Não informado");
+	const formattedInicioDate = formatDate(servico.inicio_servico);
+	const formattedFimDate = formatDate(servico.fim_servico);
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
@@ -48,11 +64,11 @@ const ServiceDetailsModal = ({ servico, onClose }: ServiceDetailsModalProps) => 
 						<div className="grid gap-4 md:grid-cols-2">
 							<div>
 								<p className="font-semibold text-neutral-800">Início do serviço</p>
-								<p>{formatDate(servico.inicio_servico)}</p>
+								<p>{formattedInicioDate}</p>
 							</div>
 							<div>
 								<p className="font-semibold text-neutral-800">Conclusão</p>
-								<p>{formatDate(servico.fim_servico)}</p>
+								<p>{formattedFimDate}</p>
 							</div>
 						</div>
 						<div>

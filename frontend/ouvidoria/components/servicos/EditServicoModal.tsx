@@ -1,6 +1,7 @@
 import { ChangeEvent, FormEvent } from "react";
 import { FiX } from "react-icons/fi";
 import { OrgaoPublico } from "../funcionarios/types";
+import DateInput from "../DateInput";
 import { Servico } from "./types";
 import { EditServicoFormState } from "./types";
 
@@ -95,24 +96,21 @@ const EditServicoModal = ({ servico, orgaos, formState, isSaving, onClose, onSub
 							<label htmlFor="editar-servico-inicio" className="text-sm font-semibold text-neutral-800">
 								Início do serviço
 							</label>
-							<input
+							<DateInput
 								id="editar-servico-inicio"
-								type="date"
 								value={formState.inicioServico}
-								onChange={handleChange("inicioServico")}
-								className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
+								onChange={(value) => onChange("inicioServico", value)}
 							/>
 						</div>
 						<div className="space-y-2">
 							<label htmlFor="editar-servico-fim" className="text-sm font-semibold text-neutral-800">
 								Conclusão do serviço
 							</label>
-							<input
+							<DateInput
 								id="editar-servico-fim"
-								type="date"
 								value={formState.fimServico}
-								onChange={handleChange("fimServico")}
-								className="w-full rounded-full border border-neutral-300 px-4 py-3 text-sm text-neutral-900 transition-colors focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-200"
+								onChange={(value) => onChange("fimServico", value)}
+								isClearable
 							/>
 						</div>
 					</div>
