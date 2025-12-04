@@ -5,13 +5,15 @@ Projeto desenvolvido para a disciplina de Banco de Dados (Semestre: 2025.2) da U
 - Bruno Gabriel Lourenço de Muniz
 - Carlos Eduardo Souza
 
+(Link do projeto no GitHub: https://github.com/Carlos-E-Souza/banco-dados-cic)
+
 ## Introdução (Tema: Sistema de Ouvidoria)
 
 O projeto busca desenvolver um sistema de ouvidoria, o qual tem como objetivo coletar as avaliações e ocorrências reportadas pelos moradores de forma unificada, visando facilitar o processo de feedback, permitir que a administração possa monitorar e melhorar seus serviços com base no feedback recebido além de promover uma maior transparência e responsabilidade, já que os usuários podem acompanhar outras avaliações e ocorrências mais leves de sua região.
 
 Para tal, projetamos o banco de dados conforme o modelo entidade relacionamento e o modelo relacional apresentado a seguir:
 
-![Modelo Entidade Relacionamento](Projeto1MER.svg) \
+![Modelo Entidade Relacionamento](Projeto1DB_MER.svg) \
 \
 ![Modelo Relacional](Projeto1BD_MR.svg)
 
