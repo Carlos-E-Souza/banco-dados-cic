@@ -15,8 +15,9 @@ Para tal, projetamos o banco de dados conforme o modelo entidade relacionamento 
 
 ![Modelo Entidade Relacionamento](Projeto1DB_MER.svg) \
 \
-![Modelo Relacional](Projeto1BD_MR.svg)
-
+![Modelo Relacional](Projeto1BD_MR.svg)\
+\
+![Diagrama Interface Persistência](DiagramaInterfacePersistencia.svg)
 ## Exemplo Prático de Uso
 
 Considere os seguintes cenários de uso do sistema de ouvidoria:
